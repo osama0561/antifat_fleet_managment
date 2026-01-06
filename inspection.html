@@ -3,279 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FleetCheck - Antifat | فحص المركبات</title>
-    
-    <!-- Tailwind CSS -->
+    <title>FleetCheck - فحص المركبة</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Scripts -->
-    <script src="js/supabase-config.js"></script>
-    <script src="js/inspection.js"></script>
-    
-</body>
-</html>    
     <style>
-        [dir="rtl"] {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .photo-upload {
-            border: 2px dashed #cbd5e1;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background-size: cover;
-            background-position: center;
-        }
-        
-        .photo-upload:hover {
-            border-color: #2563eb;
-            background-color: #f1f5f9;
-        }
-        
-        .photo-upload.has-image {
-            border-style: solid;
-            border-color: #10b981;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #2563eb;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes slideDown {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .animate-slideDown {
-            animation: slideDown 0.3s ease-out;
-        }
-        
-        input[type="file"] {
-            display: none;
-        }
+        [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .photo-upload { border: 2px dashed #cbd5e1; cursor: pointer; background-size: cover; background-position: center; }
+        .photo-upload:hover { border-color: #2563eb; background-color: #f1f5f9; }
+        .photo-upload.has-image { border-style: solid; border-color: #10b981; }
+        input[type="file"] { display: none; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     
-    <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="max-w-4xl mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold text-gray-900">FleetCheck</h1>
-                        <p class="text-xs text-gray-500">Antifat Fleet Management</p>
-                    </div>
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
                 </div>
-                
-                <button id="langToggle" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">
-                    English
-                </button>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">FleetCheck</h1>
+                    <p class="text-xs text-gray-500">Antifat Fleet Management</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="userEmail" class="text-xs text-gray-600"></span>
+                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-md">تسجيل الخروج</button>
             </div>
         </div>
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-6">
         
-        <!-- Success Message -->
-        <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg animate-slideDown">
-            <div class="flex items-start gap-3">
-                <svg class="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                    <h3 class="font-semibold text-green-900">تم التسجيل بنجاح!</h3>
-                    <p class="text-sm text-green-700 mt-1">تم حفظ بيانات الفحص بنجاح</p>
-                </div>
-            </div>
-        </div>
+        <div id="errorMessage" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
+        <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700"></div>
 
-        <!-- Error Message -->
-        <div id="errorMessage" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div class="flex items-start gap-3">
-                <svg class="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                    <h3 class="font-semibold text-red-900">خطأ في التسجيل</h3>
-                    <p class="text-sm text-red-700 mt-1" id="errorText">حدث خطأ أثناء حفظ البيانات</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inspection Form -->
         <form id="inspectionForm" class="bg-white rounded-xl shadow-sm p-6 space-y-6">
             
             <div class="border-b pb-4">
                 <h2 class="text-xl font-bold text-gray-900">نموذج فحص المركبة</h2>
-                <p class="text-sm text-gray-600 mt-1">يرجى ملء جميع الحقول المطلوبة وتصوير المركبة من 4 جهات</p>
+                <p class="text-sm text-gray-600">يرجى ملء جميع الحقول المطلوبة وتصوير المركبة من 4 جهات</p>
             </div>
 
-            <!-- Driver Selection (Temporary - for testing) -->
+            <div id="driverSection" class="p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-gray-600">السائق:</p>
+                <p id="driverName" class="font-bold text-lg">جاري التحميل...</p>
+            </div>
+
+            <div id="vehicleSection" class="p-4 bg-green-50 rounded-lg">
+                <p class="text-sm text-gray-600">المركبة:</p>
+                <p id="vehicleName" class="font-bold text-lg">جاري التحميل...</p>
+            </div>
+
             <div>
-                <label for="driverSelect" class="block text-sm font-semibold text-gray-700 mb-2">
-                    اختر السائق <span class="text-red-500">*</span>
-                </label>
-                <select id="driverSelect" required
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">-- اختر السائق --</option>
-                    <option value="loading">جاري تحميل السائقين...</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">اختر اسمك لعرض المركبات المخصصة لك</p>
-            </div>
-
-            <!-- Vehicle Selection (Auto-loaded based on driver) -->
-            <div id="vehicleSection" class="hidden">
-                <label for="vehicleSelect" class="block text-sm font-semibold text-gray-700 mb-2">
-                    المركبة المخصصة <span class="text-red-500">*</span>
-                </label>
-                <select id="vehicleSelect" required
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">-- اختر المركبة --</option>
-                </select>
-                <p class="text-xs text-blue-600 mt-1" id="vehicleInfo"></p>
-            </div>
-
-            <!-- 4 Photos Upload -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-3">
-                    صور المركبة (4 جهات) <span class="text-red-500">*</span>
-                </label>
-                
+                <label class="block text-sm font-semibold text-gray-700 mb-3">صور المركبة (4 جهات) *</label>
                 <div class="grid grid-cols-2 gap-4">
-                    
-                    <!-- Front -->
-                    <div class="photo-upload relative aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" 
-                         onclick="document.getElementById('photoFront').click()">
-                        <input type="file" id="photoFront" accept="image/*" required 
-                               onchange="handlePhotoUpload(this, 'front')">
-                        <div id="frontPreview" class="flex flex-col items-center justify-center">
-                            <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span class="text-xs font-medium text-gray-600">الأمامية - Front</span>
-                        </div>
+                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoFront').click()">
+                        <input type="file" id="photoFront" accept="image/*" onchange="handlePhoto(this,'front')">
+                        <span id="frontLabel" class="text-xs text-gray-600">الأمامية - Front</span>
                     </div>
-
-                    <!-- Back -->
-                    <div class="photo-upload relative aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" 
-                         onclick="document.getElementById('photoBack').click()">
-                        <input type="file" id="photoBack" accept="image/*" required 
-                               onchange="handlePhotoUpload(this, 'back')">
-                        <div id="backPreview" class="flex flex-col items-center justify-center">
-                            <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span class="text-xs font-medium text-gray-600">الخلفية - Back</span>
-                        </div>
+                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoBack').click()">
+                        <input type="file" id="photoBack" accept="image/*" onchange="handlePhoto(this,'back')">
+                        <span id="backLabel" class="text-xs text-gray-600">الخلفية - Back</span>
                     </div>
-
-                    <!-- Right -->
-                    <div class="photo-upload relative aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" 
-                         onclick="document.getElementById('photoRight').click()">
-                        <input type="file" id="photoRight" accept="image/*" required 
-                               onchange="handlePhotoUpload(this, 'right')">
-                        <div id="rightPreview" class="flex flex-col items-center justify-center">
-                            <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span class="text-xs font-medium text-gray-600">اليمين - Right</span>
-                        </div>
+                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoRight').click()">
+                        <input type="file" id="photoRight" accept="image/*" onchange="handlePhoto(this,'right')">
+                        <span id="rightLabel" class="text-xs text-gray-600">اليمين - Right</span>
                     </div>
-
-                    <!-- Left -->
-                    <div class="photo-upload relative aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" 
-                         onclick="document.getElementById('photoLeft').click()">
-                        <input type="file" id="photoLeft" accept="image/*" required 
-                               onchange="handlePhotoUpload(this, 'left')">
-                        <div id="leftPreview" class="flex flex-col items-center justify-center">
-                            <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span class="text-xs font-medium text-gray-600">اليسار - Left</span>
-                        </div>
+                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoLeft').click()">
+                        <input type="file" id="photoLeft" accept="image/*" onchange="handlePhoto(this,'left')">
+                        <span id="leftLabel" class="text-xs text-gray-600">اليسار - Left</span>
                     </div>
-
                 </div>
-                <p class="text-xs text-gray-500 mt-2">
-                    ⓘ يرجى التقاط صور واضحة من جميع الجهات الأربع للمركبة
-                </p>
             </div>
 
-            <!-- Declaration Checkbox (NEW - as Mohammed requested) -->
             <div class="border-t border-b py-4">
                 <label class="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" id="declaration" required
-                        class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <input type="checkbox" id="declaration" required class="mt-1 w-5 h-5">
                     <div>
-                        <span class="text-sm font-semibold text-gray-900">
-                            إقرار بحالة المركبة <span class="text-red-500">*</span>
-                        </span>
-                        <p class="text-sm text-gray-600 mt-1">
-                            أقر بأنني استلمت المركبة بحالة جيدة / أسلم المركبة بحالة جيدة
-                        </p>
+                        <span class="text-sm font-semibold">إقرار بحالة المركبة *</span>
+                        <p class="text-sm text-gray-600">أقر بأنني استلمت المركبة بحالة جيدة</p>
                     </div>
                 </label>
             </div>
 
-            <!-- Notes -->
             <div>
-                <label for="notes" class="block text-sm font-semibold text-gray-700 mb-2">
-                    ملاحظات (اختياري)
-                </label>
-                <textarea id="notes" rows="3"
-                    placeholder="أضف أي ملاحظات إضافية..."
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
-                    maxlength="500"></textarea>
-                <div class="flex justify-between mt-1">
-                    <span class="text-xs text-gray-500" id="noteChar">0 / 500 حرف</span>
-                </div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">ملاحظات (اختياري)</label>
+                <textarea id="notes" rows="3" class="w-full px-4 py-3 border rounded-lg" maxlength="500"></textarea>
             </div>
 
-            <!-- Submit Button -->
-            <button type="submit" id="submitBtn"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                <span>تسجيل الفحص</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg">
+                تسجيل الفحص
             </button>
-
         </form>
-
-        <!-- Footer -->
-        <div class="text-center mt-8 text-sm text-gray-500">
-            <p>FleetCheck by <a href="https://nahrai.com" target="_blank" class="text-blue-600 hover:underline">Nahrai.com</a></p>
-            <p class="mt-1">Antifat Fleet Management © 2026</p>
-        </div>
-
     </main>
 
-    <!-- Scripts -->
-    <script src="js/supabase-config.js"></script>
-    <script src="js/inspection.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        const mySupabase = window.supabase.createClient(
+            'https://fwatvgxueajvjcwdokwh.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA'
+        );
+
+        let currentDriver = null;
+        let currentVehicle = null;
+        let photos = { front: null, back: null, right: null, left: null };
+
+        // Check auth and load data
+        async function init() {
+            const { data: { session } } = await mySupabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('userEmail').textContent = session.user.email;
+
+            // Load driver by email
+            const { data: driver } = await mySupabase
+                .from('drivers')
+                .select('*')
+                .eq('email', session.user.email)
+                .eq('is_active', true)
+                .single();
+
+            if (driver) {
+                currentDriver = driver;
+                document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
+
+                // Load vehicle assignment
+                const { data: assignment } = await mySupabase
+                    .from('driver_vehicle_assignments')
+                    .select('vehicle_id, vehicles(*)')
+                    .eq('driver_id', driver.id)
+                    .eq('is_current', true)
+                    .single();
+
+                if (assignment && assignment.vehicles) {
+                    currentVehicle = assignment.vehicles;
+                    document.getElementById('vehicleName').textContent = assignment.vehicles.van_code + ' - ' + assignment.vehicles.plate_number;
+                } else {
+                    document.getElementById('vehicleName').textContent = 'لا توجد مركبة مخصصة';
+                }
+            } else {
+                document.getElementById('driverName').textContent = 'لم يتم العثور على السائق';
+            }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await mySupabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        // Photo handling
+        function handlePhoto(input, side) {
+            const file = input.files[0];
+            if (file) {
+                photos[side] = file;
+                const parent = input.parentElement;
+                parent.style.backgroundImage = 'url(' + URL.createObjectURL(file) + ')';
+                parent.classList.add('has-image');
+                document.getElementById(side + 'Label').textContent = '✓';
+            }
+        }
+
+        // Form submit
+        document.getElementById('inspectionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentDriver || !currentVehicle) {
+                alert('خطأ: لم يتم تحميل بيانات السائق أو المركبة');
+                return;
+            }
+
+            if (!photos.front || !photos.back || !photos.right || !photos.left) {
+                alert('يرجى رفع جميع الصور الأربعة');
+                return;
+            }
+
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'جاري الإرسال...';
+
+            try {
+                const { error } = await mySupabase.from('inspections').insert([{
+                    inspection_code: 'INS-' + Date.now(),
+                    driver_id: currentDriver.id,
+                    vehicle_id: currentVehicle.id,
+                    location: currentVehicle.location,
+                    notes: document.getElementById('notes').value,
+                    declaration_accepted: true
+                }]);
+
+                if (error) throw error;
+
+                document.getElementById('successMessage').textContent = '✅ تم تسجيل الفحص بنجاح!';
+                document.getElementById('successMessage').classList.remove('hidden');
+                document.getElementById('inspectionForm').reset();
+                
+                // Reset photos
+                photos = { front: null, back: null, right: null, left: null };
+                document.querySelectorAll('.photo-upload').forEach(el => {
+                    el.style.backgroundImage = '';
+                    el.classList.remove('has-image');
+                });
+                ['front','back','right','left'].forEach(s => {
+                    document.getElementById(s + 'Label').textContent = s === 'front' ? 'الأمامية' : s === 'back' ? 'الخلفية' : s === 'right' ? 'اليمين' : 'اليسار';
+                });
+
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = '❌ خطأ: ' + error.message;
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').textContent = 'تسجيل الفحص';
+        });
+
+        // Initialize
+        init();
+    </script>
 </body>
 </html>
