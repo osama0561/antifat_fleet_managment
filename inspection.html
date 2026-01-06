@@ -189,16 +189,52 @@
             document.getElementById('submitBtn').textContent = 'جاري الإرسال...';
 
             try {
-                const { error } = await mySupabase.from('inspections').insert([{
+                // 1. Save to Supabase
+                const inspectionData = {
                     inspection_code: 'INS-' + Date.now(),
                     driver_id: currentDriver.id,
                     vehicle_id: currentVehicle.id,
                     location: currentVehicle.location,
                     notes: document.getElementById('notes').value,
                     declaration_accepted: true
-                }]);
+                };
+
+                const { data: inspection, error } = await mySupabase
+                    .from('inspections')
+                    .insert([inspectionData])
+                    .select()
+                    .single();
 
                 if (error) throw error;
+
+                // 2. Send to n8n webhook
+                const webhookData = {
+                    inspectionCode: inspectionData.inspection_code,
+                    timestamp: new Date().toISOString(),
+                    driverId: currentDriver.id,
+                    driverCode: currentDriver.driver_code,
+                    driverName: currentDriver.full_name,
+                    vehicleId: currentVehicle.id,
+                    vanCode: currentVehicle.van_code,
+                    plateNumber: currentVehicle.plate_number,
+                    location: currentVehicle.location,
+                    notes: inspectionData.notes,
+                    declarationAccepted: true,
+                    photos: {
+                        front: photos.front ? photos.front.name : null,
+                        back: photos.back ? photos.back.name : null,
+                        right: photos.right ? photos.right.name : null,
+                        left: photos.left ? photos.left.name : null
+                    }
+                };
+
+                // Send to n8n (don't wait for response)
+                fetch('https://n8n.srv1200431.hstgr.cloud/webhook/fleetcheck-antifat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookData)
+                }).then(res => console.log('n8n webhook sent:', res.status))
+                  .catch(err => console.error('n8n webhook error:', err));
 
                 document.getElementById('successMessage').textContent = '✅ تم تسجيل الفحص بنجاح!';
                 document.getElementById('successMessage').classList.remove('hidden');
