@@ -81,8 +81,79 @@
 
     </div>
 
+    <!-- Load Supabase FIRST -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
+    
     <script>
+        // Wait for Supabase to be ready
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('🔐 Login page loaded');
+            
+            // Check if already logged in
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    console.log('✅ Already logged in, redirecting...');
+                    window.location.href = 'inspection.html';
+                    return;
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
+            }
+            
+            // Handle login form
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+        });
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Disable button
+            loginBtn.disabled = true;
+            btnText.textContent = 'جاري تسجيل الدخول...';
+            errorMessage.classList.add('hidden');
+            
+            try {
+                console.log('🔐 Attempting login for:', email);
+                
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    console.error('❌ Login error:', error);
+                    throw error;
+                }
+                
+                console.log('✅ Login successful:', data);
+                
+                // Small delay then redirect
+                setTimeout(() => {
+                    window.location.href = 'inspection.html';
+                }, 500);
+                
+            } catch (error) {
+                console.error('❌ Login failed:', error.message);
+                errorMessage.textContent = 'خطأ في تسجيل الدخول: ' + error.message;
+                errorMessage.classList.remove('hidden');
+                
+                // Re-enable button
+                loginBtn.disabled = false;
+                btnText.textContent = 'تسجيل الدخول';
+            }
+        }
+    </script>
         // Check if already logged in
         document.addEventListener('DOMContentLoaded', async () => {
             const { data: { session } } = await supabase.auth.getSession();
