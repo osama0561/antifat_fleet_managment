@@ -4,7 +4,7 @@
 
 // Configuration
 const CONFIG = {
-    WEBHOOK_URL: 'https://n8n.srv1200431.hstgr.cloud/webhook/fleetcheck-antifat',
+    WEBHOOK_URL: 'https://n8n.srv1200431.hstgr.cloud/webhook-test/fleetcheck-antifat',
     MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
     COMPRESSION_QUALITY: 0.8
 };
@@ -19,12 +19,16 @@ let uploadedPhotos = {
 
 let selectedDriver = null;
 let selectedVehicle = null;
+let currentUser = null;
 
 // ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 FleetCheck v2 initializing...');
+    
+    // Check authentication
+    await checkAuth();
     
     // Load drivers
     await loadDrivers();
@@ -34,9 +38,84 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('vehicleSelect').addEventListener('change', handleVehicleChange);
     document.getElementById('inspectionForm').addEventListener('submit', handleFormSubmit);
     document.getElementById('notes').addEventListener('input', updateCharCount);
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     
     console.log('✅ FleetCheck v2 initialized');
 });
+
+// ========================================
+// Authentication Check
+// ========================================
+async function checkAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+        // Not logged in, redirect to login
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    currentUser = session.user;
+    console.log('👤 Logged in as:', currentUser.email);
+    
+    // Show user email
+    const userEmailEl = document.getElementById('userEmail');
+    if (userEmailEl) {
+        userEmailEl.textContent = currentUser.email;
+    }
+    
+    // Auto-load driver based on email
+    await autoLoadDriver();
+}
+
+// ========================================
+// Auto-load Driver Based on Email
+// ========================================
+async function autoLoadDriver() {
+    try {
+        // Find driver by email
+        const { data: driver, error } = await supabase
+            .from('drivers')
+            .select('*')
+            .eq('email', currentUser.email)
+            .eq('is_active', true)
+            .single();
+        
+        if (error) {
+            console.warn('⚠️ Driver not found for this email');
+            return;
+        }
+        
+        if (driver) {
+            // Auto-select this driver
+            selectedDriver = driver;
+            console.log('✅ Auto-loaded driver:', driver.full_name);
+            
+            // Hide driver dropdown and show driver name
+            const driverSelect = document.getElementById('driverSelect');
+            driverSelect.innerHTML = `<option value="${driver.id}" selected>${driver.full_name} (${driver.driver_code})</option>`;
+            driverSelect.disabled = true;
+            driverSelect.classList.add('bg-gray-100');
+            
+            // Load their vehicles
+            await loadAssignedVehicles(driver.id);
+        }
+    } catch (error) {
+        console.error('❌ Error auto-loading driver:', error);
+    }
+}
+
+// ========================================
+// Logout
+// ========================================
+async function handleLogout() {
+    try {
+        await supabase.auth.signOut();
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('❌ Logout error:', error);
+    }
+}
 
 // ========================================
 // Load Drivers from Supabase
@@ -54,6 +133,13 @@ async function loadDrivers() {
         if (error) throw error;
         
         const driverSelect = document.getElementById('driverSelect');
+        
+        // If driver already auto-loaded (logged in), skip
+        if (selectedDriver) {
+            console.log('✅ Driver already auto-loaded from login');
+            return;
+        }
+        
         driverSelect.innerHTML = '<option value="">-- اختر السائق --</option>';
         
         if (drivers && drivers.length > 0) {
@@ -431,12 +517,8 @@ function resetForm() {
         `;
     });
     
-    // Hide vehicle section
-    document.getElementById('vehicleSection').classList.add('hidden');
-    
-    // Reset selections
-    selectedDriver = null;
-    selectedVehicle = null;
+    // Don't hide vehicle section or reset driver if logged in
+    // selectedDriver and selectedVehicle remain
     
     // Re-enable button
     const submitBtn = document.getElementById('submitBtn');
