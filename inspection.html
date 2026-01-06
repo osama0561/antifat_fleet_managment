@@ -61,19 +61,19 @@
                 <label class="block text-sm font-semibold text-gray-700 mb-3">صور المركبة (4 جهات) *</label>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoFront').click()">
-                        <input type="file" id="photoFront" accept="image/*" onchange="handlePhoto(this,'front')">
+                        <input type="file" id="photoFront" accept="image/*" capture="environment" onchange="handlePhoto(this,'front')">
                         <span id="frontLabel" class="text-xs text-gray-600">الأمامية - Front</span>
                     </div>
                     <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoBack').click()">
-                        <input type="file" id="photoBack" accept="image/*" onchange="handlePhoto(this,'back')">
+                        <input type="file" id="photoBack" accept="image/*" capture="environment" onchange="handlePhoto(this,'back')">
                         <span id="backLabel" class="text-xs text-gray-600">الخلفية - Back</span>
                     </div>
                     <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoRight').click()">
-                        <input type="file" id="photoRight" accept="image/*" onchange="handlePhoto(this,'right')">
+                        <input type="file" id="photoRight" accept="image/*" capture="environment" onchange="handlePhoto(this,'right')">
                         <span id="rightLabel" class="text-xs text-gray-600">اليمين - Right</span>
                     </div>
                     <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoLeft').click()">
-                        <input type="file" id="photoLeft" accept="image/*" onchange="handlePhoto(this,'left')">
+                        <input type="file" id="photoLeft" accept="image/*" capture="environment" onchange="handlePhoto(this,'left')">
                         <span id="leftLabel" class="text-xs text-gray-600">اليسار - Left</span>
                     </div>
                 </div>
@@ -102,27 +102,24 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase
-        const mySupabase = window.supabase.createClient(
-            'https://fwatvgxueajvjcwdokwh.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA'
-        );
+        const N8N_WEBHOOK = 'https://n8n.srv1200431.hstgr.cloud/webhook/fleetcheck-antifat';
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+        
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentDriver = null;
         let currentVehicle = null;
         let photos = { front: null, back: null, right: null, left: null };
 
-        // Check auth and load data
         async function init() {
             const { data: { session } } = await mySupabase.auth.getSession();
             if (!session) {
                 window.location.href = 'login.html';
                 return;
             }
-
             document.getElementById('userEmail').textContent = session.user.email;
 
-            // Load driver by email
             const { data: driver } = await mySupabase
                 .from('drivers')
                 .select('*')
@@ -134,7 +131,6 @@
                 currentDriver = driver;
                 document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
 
-                // Load vehicle assignment
                 const { data: assignment } = await mySupabase
                     .from('driver_vehicle_assignments')
                     .select('vehicle_id, vehicles(*)')
@@ -142,9 +138,9 @@
                     .eq('is_current', true)
                     .single();
 
-                if (assignment && assignment.vehicles) {
+                if (assignment?.vehicles) {
                     currentVehicle = assignment.vehicles;
-                    document.getElementById('vehicleName').textContent = assignment.vehicles.van_code + ' - ' + assignment.vehicles.plate_number;
+                    document.getElementById('vehicleName').textContent = currentVehicle.van_code + ' - ' + currentVehicle.plate_number;
                 } else {
                     document.getElementById('vehicleName').textContent = 'لا توجد مركبة مخصصة';
                 }
@@ -153,13 +149,11 @@
             }
         }
 
-        // Logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             await mySupabase.auth.signOut();
             window.location.href = 'login.html';
         });
 
-        // Photo handling
         function handlePhoto(input, side) {
             const file = input.files[0];
             if (file) {
@@ -167,11 +161,38 @@
                 const parent = input.parentElement;
                 parent.style.backgroundImage = 'url(' + URL.createObjectURL(file) + ')';
                 parent.classList.add('has-image');
-                document.getElementById(side + 'Label').textContent = '✓';
+                document.getElementById(side + 'Label').textContent = '✓ تم';
             }
         }
 
-        // Form submit
+        // Upload photo to Supabase Storage and return public URL
+        async function uploadPhoto(file, inspectionCode, side) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${inspectionCode}/${side}.${fileExt}`;
+            
+            console.log(`📤 Uploading ${side} photo...`);
+            
+            const { data, error } = await mySupabase.storage
+                .from('inspections')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+            if (error) {
+                console.error(`❌ Upload error for ${side}:`, error);
+                throw new Error(`فشل رفع صورة ${side}: ${error.message}`);
+            }
+
+            // Get public URL
+            const { data: urlData } = mySupabase.storage
+                .from('inspections')
+                .getPublicUrl(fileName);
+
+            console.log(`✅ ${side} uploaded:`, urlData.publicUrl);
+            return urlData.publicUrl;
+        }
+
         document.getElementById('inspectionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -185,81 +206,104 @@
                 return;
             }
 
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').textContent = 'جاري الإرسال...';
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
 
             try {
-                // 1. Save to Supabase
-                const inspectionData = {
-                    inspection_code: 'INS-' + Date.now(),
+                const inspectionCode = 'INS-' + Date.now();
+
+                // 1. Upload photos to Supabase Storage
+                submitBtn.textContent = 'جاري رفع الصورة 1/4...';
+                const frontUrl = await uploadPhoto(photos.front, inspectionCode, 'front');
+                
+                submitBtn.textContent = 'جاري رفع الصورة 2/4...';
+                const backUrl = await uploadPhoto(photos.back, inspectionCode, 'back');
+                
+                submitBtn.textContent = 'جاري رفع الصورة 3/4...';
+                const rightUrl = await uploadPhoto(photos.right, inspectionCode, 'right');
+                
+                submitBtn.textContent = 'جاري رفع الصورة 4/4...';
+                const leftUrl = await uploadPhoto(photos.left, inspectionCode, 'left');
+
+                // 2. Save to Supabase Database
+                submitBtn.textContent = 'جاري حفظ البيانات...';
+                const { error: dbError } = await mySupabase.from('inspections').insert([{
+                    inspection_code: inspectionCode,
                     driver_id: currentDriver.id,
                     vehicle_id: currentVehicle.id,
                     location: currentVehicle.location,
-                    notes: document.getElementById('notes').value,
+                    photo_front: frontUrl,
+                    photo_back: backUrl,
+                    photo_right: rightUrl,
+                    photo_left: leftUrl,
+                    notes: document.getElementById('notes').value || '',
                     declaration_accepted: true
-                };
+                }]);
 
-                const { data: inspection, error } = await mySupabase
-                    .from('inspections')
-                    .insert([inspectionData])
-                    .select()
-                    .single();
+                if (dbError) throw dbError;
+                console.log('✅ Saved to database');
 
-                if (error) throw error;
-
-                // 2. Send to n8n webhook
+                // 3. Send URLs to n8n webhook
+                submitBtn.textContent = 'جاري إرسال البيانات...';
                 const webhookData = {
-                    inspectionCode: inspectionData.inspection_code,
+                    inspectionCode,
                     timestamp: new Date().toISOString(),
-                    driverId: currentDriver.id,
                     driverCode: currentDriver.driver_code,
                     driverName: currentDriver.full_name,
-                    vehicleId: currentVehicle.id,
+                    driverEmail: currentDriver.email,
                     vanCode: currentVehicle.van_code,
                     plateNumber: currentVehicle.plate_number,
                     location: currentVehicle.location,
-                    notes: inspectionData.notes,
+                    notes: document.getElementById('notes').value || '',
                     declarationAccepted: true,
                     photos: {
-                        front: photos.front ? photos.front.name : null,
-                        back: photos.back ? photos.back.name : null,
-                        right: photos.right ? photos.right.name : null,
-                        left: photos.left ? photos.left.name : null
+                        front: frontUrl,
+                        back: backUrl,
+                        right: rightUrl,
+                        left: leftUrl
                     }
                 };
 
-                // Send to n8n (don't wait for response)
-                fetch('https://n8n.srv1200431.hstgr.cloud/webhook/fleetcheck-antifat', {
+                console.log('📤 Sending to n8n:', webhookData);
+                
+                fetch(N8N_WEBHOOK, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    mode: 'no-cors',
                     body: JSON.stringify(webhookData)
-                }).then(res => console.log('n8n webhook sent:', res.status))
-                  .catch(err => console.error('n8n webhook error:', err));
+                }).then(() => console.log('✅ Sent to n8n'))
+                  .catch(err => console.warn('⚠️ n8n error:', err));
 
-                document.getElementById('successMessage').textContent = '✅ تم تسجيل الفحص بنجاح!';
+                // Success!
+                document.getElementById('successMessage').innerHTML = '✅ تم تسجيل الفحص بنجاح!<br><small>Inspection Code: ' + inspectionCode + '</small>';
                 document.getElementById('successMessage').classList.remove('hidden');
-                document.getElementById('inspectionForm').reset();
                 
-                // Reset photos
+                // Reset form
+                document.getElementById('inspectionForm').reset();
                 photos = { front: null, back: null, right: null, left: null };
                 document.querySelectorAll('.photo-upload').forEach(el => {
                     el.style.backgroundImage = '';
                     el.classList.remove('has-image');
                 });
-                ['front','back','right','left'].forEach(s => {
-                    document.getElementById(s + 'Label').textContent = s === 'front' ? 'الأمامية' : s === 'back' ? 'الخلفية' : s === 'right' ? 'اليمين' : 'اليسار';
-                });
+                document.getElementById('frontLabel').textContent = 'الأمامية - Front';
+                document.getElementById('backLabel').textContent = 'الخلفية - Back';
+                document.getElementById('rightLabel').textContent = 'اليمين - Right';
+                document.getElementById('leftLabel').textContent = 'اليسار - Left';
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
 
             } catch (error) {
+                console.error('❌ Error:', error);
                 document.getElementById('errorMessage').textContent = '❌ خطأ: ' + error.message;
                 document.getElementById('errorMessage').classList.remove('hidden');
             }
 
-            document.getElementById('submitBtn').disabled = false;
-            document.getElementById('submitBtn').textContent = 'تسجيل الفحص';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'تسجيل الفحص';
         });
 
-        // Initialize
         init();
     </script>
 </body>
