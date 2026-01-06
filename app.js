@@ -5,7 +5,7 @@
 // Configuration
 const CONFIG = {
     // n8n Webhook URL - UPDATE THIS with your actual webhook URL
-    WEBHOOK_URL: 'https://n8n.srv1200431.hstgr.cloud/webhook/fleetcheck-antifat',
+    WEBHOOK_URL: 'https://n8n.srv1200431.hstgr.cloud/webhook-test/fleetcheck-antifat',
     MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
     ALLOWED_FILE_TYPES: ['image/jpeg', 'image/jpg', 'image/png'],
     COMPRESSION_QUALITY: 0.8, // 80% quality for faster uploads
