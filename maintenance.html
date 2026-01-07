@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetCheck - تقرير صيانة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .photo-upload {
+            border: 3px dashed #eab308;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            min-height: 100px;
+            transition: all 0.2s;
+        }
+        .photo-upload:hover { border-color: #ca8a04; background-color: #fefce8; }
+        .photo-upload:active { transform: scale(0.98); }
+        .photo-upload.has-image { border-style: solid; border-color: #10b981; border-width: 3px; }
+        input[type="file"] { display: none; }
+        .issue-option {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .issue-option:hover { transform: scale(1.02); }
+        .issue-option input:checked + div {
+            background: #fef3c7 !important;
+            border-color: #f59e0b !important;
+            border-width: 2px;
+        }
+        .urgency-option input:checked + div {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                    <span class="text-xl">🔧</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">تقرير صيانة</h1>
+                    <p class="text-xs text-gray-500">Maintenance Report</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md">← الرئيسية</a>
+                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-md">خروج</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+
+        <div id="errorMessage" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
+        <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700"></div>
+
+        <form id="maintenanceForm" class="bg-white rounded-xl shadow-sm p-6 space-y-6">
+
+            <div class="border-b pb-4">
+                <h2 class="text-xl font-bold text-gray-900">نموذج طلب صيانة</h2>
+                <p class="text-sm text-gray-600">أبلغ عن أي مشكلة في المركبة تحتاج إلى صيانة</p>
+            </div>
+
+            <div id="driverSection" class="p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-gray-600">السائق:</p>
+                <p id="driverName" class="font-bold text-lg">جاري التحميل...</p>
+            </div>
+
+            <div id="vehicleSection" class="p-4 bg-green-50 rounded-lg">
+                <p class="text-sm text-gray-600">المركبة:</p>
+                <p id="vehicleName" class="font-bold text-lg">جاري التحميل...</p>
+            </div>
+
+            <!-- ISSUE TYPE SELECTION -->
+            <div>
+                <label class="block text-lg font-bold text-gray-700 mb-3">🔧 نوع المشكلة *</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="engine" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🚗</span>
+                            <span class="font-semibold text-sm">المحرك</span>
+                            <span class="text-xs text-gray-500 block">Engine</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="brakes" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🛑</span>
+                            <span class="font-semibold text-sm">الفرامل</span>
+                            <span class="text-xs text-gray-500 block">Brakes</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="tires" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🛞</span>
+                            <span class="font-semibold text-sm">الإطارات</span>
+                            <span class="text-xs text-gray-500 block">Tires</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="ac" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">❄️</span>
+                            <span class="font-semibold text-sm">التكييف</span>
+                            <span class="text-xs text-gray-500 block">A/C</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="lights" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">💡</span>
+                            <span class="font-semibold text-sm">الأنوار</span>
+                            <span class="text-xs text-gray-500 block">Lights</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="battery" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🔋</span>
+                            <span class="font-semibold text-sm">البطارية</span>
+                            <span class="text-xs text-gray-500 block">Battery</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="fridge" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🧊</span>
+                            <span class="font-semibold text-sm">الثلاجة</span>
+                            <span class="text-xs text-gray-500 block">Fridge/Cooler</span>
+                        </div>
+                    </label>
+                    <label class="issue-option">
+                        <input type="checkbox" name="issueType" value="other" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">⚙️</span>
+                            <span class="font-semibold text-sm">أخرى</span>
+                            <span class="text-xs text-gray-500 block">Other</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- URGENCY LEVEL -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-3">⚠️ مستوى الأهمية *</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="urgency-option cursor-pointer">
+                        <input type="radio" name="urgency" value="low" class="hidden">
+                        <div class="p-4 bg-green-50 rounded-xl border-2 border-green-200 text-center">
+                            <span class="text-2xl block mb-1">🟢</span>
+                            <span class="font-semibold text-green-700">منخفض</span>
+                            <span class="text-xs text-gray-500 block">Low</span>
+                        </div>
+                    </label>
+                    <label class="urgency-option cursor-pointer">
+                        <input type="radio" name="urgency" value="medium" class="hidden">
+                        <div class="p-4 bg-yellow-50 rounded-xl border-2 border-yellow-200 text-center">
+                            <span class="text-2xl block mb-1">🟡</span>
+                            <span class="font-semibold text-yellow-700">متوسط</span>
+                            <span class="text-xs text-gray-500 block">Medium</span>
+                        </div>
+                    </label>
+                    <label class="urgency-option cursor-pointer">
+                        <input type="radio" name="urgency" value="high" class="hidden">
+                        <div class="p-4 bg-red-50 rounded-xl border-2 border-red-200 text-center">
+                            <span class="text-2xl block mb-1">🔴</span>
+                            <span class="font-semibold text-red-700">عالي</span>
+                            <span class="text-xs text-gray-500 block">High</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-2">📝 وصف المشكلة *</label>
+                <p class="text-sm text-gray-500 mb-3">اشرح المشكلة بالتفصيل</p>
+                <textarea id="description" rows="4" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-yellow-500 focus:ring-0" placeholder="مثال: المحرك يصدر صوت غريب عند التشغيل..."></textarea>
+            </div>
+
+            <!-- PHOTO CAPTURE SECTION (Optional) -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-3">📸 صور المشكلة (اختياري)</label>
+                <p class="text-sm text-gray-500 mb-4">التقط صور توضح المشكلة - حتى 3 صور</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo1').click()">
+                        <input type="file" id="photo1" accept="image/*" capture="environment" onchange="handlePhoto(this, 1)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo1Label" class="text-xs font-bold text-yellow-700 mt-1">صورة 1</span>
+                    </div>
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo2').click()">
+                        <input type="file" id="photo2" accept="image/*" capture="environment" onchange="handlePhoto(this, 2)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo2Label" class="text-xs font-bold text-yellow-700 mt-1">صورة 2</span>
+                    </div>
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo3').click()">
+                        <input type="file" id="photo3" accept="image/*" capture="environment" onchange="handlePhoto(this, 3)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo3Label" class="text-xs font-bold text-yellow-700 mt-1">صورة 3</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ODOMETER READING -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-2">🔢 قراءة العداد (كم)</label>
+                <input type="number" id="odometer" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-yellow-500 focus:ring-0" placeholder="مثال: 45000">
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-4 rounded-lg text-lg">
+                إرسال طلب الصيانة
+            </button>
+        </form>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+
+        const CONFIG = {
+            MAX_FILE_SIZE: 10 * 1024 * 1024,
+            ALLOWED_FILE_TYPES: ['image/jpeg', 'image/jpg', 'image/png']
+        };
+
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentDriver = null;
+        let currentVehicle = null;
+        let photos = { 1: null, 2: null, 3: null };
+        let currentLocation = null;
+
+        // Get GPS location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        console.log('Location captured:', currentLocation);
+                    },
+                    (error) => console.warn('Location error:', error.message),
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
+        }
+        getLocation();
+
+        async function init() {
+            const { data: { session } } = await mySupabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: driver } = await mySupabase
+                .from('drivers')
+                .select('*')
+                .eq('email', session.user.email)
+                .eq('is_active', true)
+                .single();
+
+            if (driver) {
+                currentDriver = driver;
+                document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
+
+                const { data: assignment } = await mySupabase
+                    .from('driver_vehicle_assignments')
+                    .select('vehicle_id, vehicles(*)')
+                    .eq('driver_id', driver.id)
+                    .eq('is_current', true)
+                    .single();
+
+                if (assignment?.vehicles) {
+                    currentVehicle = assignment.vehicles;
+                    document.getElementById('vehicleName').textContent = currentVehicle.van_code + ' - ' + currentVehicle.plate_number;
+                } else {
+                    document.getElementById('vehicleName').textContent = 'لا توجد مركبة مخصصة';
+                }
+            } else {
+                document.getElementById('driverName').textContent = 'لم يتم العثور على السائق';
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await mySupabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        function handlePhoto(input, num) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type.toLowerCase())) {
+                alert('نوع الملف غير مدعوم. يرجى اختيار صورة JPG أو PNG');
+                input.value = '';
+                return;
+            }
+
+            if (file.size > CONFIG.MAX_FILE_SIZE) {
+                alert('حجم الملف كبير جداً. الحد الأقصى 10 MB');
+                input.value = '';
+                return;
+            }
+
+            photos[num] = file;
+            const parent = input.parentElement;
+            parent.style.backgroundImage = 'url(' + URL.createObjectURL(file) + ')';
+            parent.classList.add('has-image');
+            document.getElementById('photo' + num + 'Label').textContent = '✓ تم';
+        }
+
+        async function uploadPhoto(file, reportCode, num) {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const fileName = `maintenance/${reportCode}/photo${num}.${fileExt}`;
+
+            const { data, error } = await mySupabase.storage
+                .from('inspections')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: true,
+                    contentType: file.type || 'image/jpeg'
+                });
+
+            if (error) throw new Error('فشل رفع الصورة: ' + error.message);
+
+            const { data: urlData } = mySupabase.storage
+                .from('inspections')
+                .getPublicUrl(fileName);
+
+            return urlData.publicUrl;
+        }
+
+        document.getElementById('maintenanceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentDriver || !currentVehicle) {
+                alert('خطأ: لم يتم تحميل بيانات السائق أو المركبة');
+                return;
+            }
+
+            // Validate issue types
+            const selectedIssues = document.querySelectorAll('input[name="issueType"]:checked');
+            if (selectedIssues.length === 0) {
+                alert('يرجى اختيار نوع المشكلة على الأقل');
+                return;
+            }
+
+            // Validate urgency
+            const urgency = document.querySelector('input[name="urgency"]:checked');
+            if (!urgency) {
+                alert('يرجى اختيار مستوى الأهمية');
+                return;
+            }
+
+            // Validate description
+            const description = document.getElementById('description').value.trim();
+            if (!description) {
+                alert('يرجى كتابة وصف للمشكلة');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+
+            try {
+                const reportCode = 'MNT-' + Date.now();
+                const issueTypes = Array.from(selectedIssues).map(cb => cb.value);
+
+                // Upload photos if any
+                let photoUrls = { photo1: null, photo2: null, photo3: null };
+
+                if (photos[1]) {
+                    submitBtn.textContent = 'جاري رفع الصورة 1...';
+                    photoUrls.photo1 = await uploadPhoto(photos[1], reportCode, 1);
+                }
+                if (photos[2]) {
+                    submitBtn.textContent = 'جاري رفع الصورة 2...';
+                    photoUrls.photo2 = await uploadPhoto(photos[2], reportCode, 2);
+                }
+                if (photos[3]) {
+                    submitBtn.textContent = 'جاري رفع الصورة 3...';
+                    photoUrls.photo3 = await uploadPhoto(photos[3], reportCode, 3);
+                }
+
+                submitBtn.textContent = 'جاري حفظ البيانات...';
+
+                // Refresh GPS
+                getLocation();
+
+                const { error: dbError } = await mySupabase.from('maintenance_reports').insert([{
+                    report_code: reportCode,
+                    driver_id: currentDriver.id,
+                    vehicle_id: currentVehicle.id,
+                    issue_types: issueTypes,
+                    urgency: urgency.value,
+                    description: description,
+                    odometer_reading: document.getElementById('odometer').value || null,
+                    photo_1: photoUrls.photo1,
+                    photo_2: photoUrls.photo2,
+                    photo_3: photoUrls.photo3,
+                    gps_latitude: currentLocation?.latitude || null,
+                    gps_longitude: currentLocation?.longitude || null,
+                    gps_accuracy: currentLocation?.accuracy || null,
+                    status: 'pending',
+                    submitted_at: new Date().toISOString()
+                }]);
+
+                if (dbError) throw dbError;
+
+                // Get urgency label
+                const urgencyLabels = { low: '🟢 منخفض', medium: '🟡 متوسط', high: '🔴 عالي' };
+                const issueLabels = {
+                    engine: 'المحرك', brakes: 'الفرامل', tires: 'الإطارات',
+                    ac: 'التكييف', lights: 'الأنوار', battery: 'البطارية',
+                    fridge: 'الثلاجة', other: 'أخرى'
+                };
+
+                document.getElementById('successMessage').innerHTML = `
+                    <div class="text-center">
+                        <span class="text-4xl">✅</span>
+                        <h3 class="text-xl font-bold mt-2">تم إرسال طلب الصيانة!</h3>
+                        <p class="text-sm mt-2">Report Code: <strong>${reportCode}</strong></p>
+                        <div class="mt-3 p-3 bg-white rounded-lg text-sm text-right">
+                            <p><strong>السائق:</strong> ${currentDriver.full_name}</p>
+                            <p><strong>المركبة:</strong> ${currentVehicle.van_code}</p>
+                            <p><strong>نوع المشكلة:</strong> ${issueTypes.map(t => issueLabels[t]).join(', ')}</p>
+                            <p><strong>الأهمية:</strong> ${urgencyLabels[urgency.value]}</p>
+                            <p><strong>الصور:</strong> ${Object.values(photoUrls).filter(u => u).length} صور مرفقة</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3">سيتم مراجعة طلبك من قبل فريق الصيانة</p>
+                    </div>
+                `;
+                document.getElementById('successMessage').classList.remove('hidden');
+
+                // Reset form
+                document.getElementById('maintenanceForm').reset();
+                photos = { 1: null, 2: null, 3: null };
+                document.querySelectorAll('.photo-upload').forEach(el => {
+                    el.style.backgroundImage = '';
+                    el.classList.remove('has-image');
+                });
+                document.getElementById('photo1Label').textContent = 'صورة 1';
+                document.getElementById('photo2Label').textContent = 'صورة 2';
+                document.getElementById('photo3Label').textContent = 'صورة 3';
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('errorMessage').textContent = '❌ خطأ: ' + error.message;
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'إرسال طلب الصيانة';
+        });
+
+        init();
+    </script>
+</body>
+</html>
