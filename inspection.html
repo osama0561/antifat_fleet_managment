@@ -7,10 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .photo-upload { border: 2px dashed #cbd5e1; cursor: pointer; background-size: cover; background-position: center; }
-        .photo-upload:hover { border-color: #2563eb; background-color: #f1f5f9; }
-        .photo-upload.has-image { border-style: solid; border-color: #10b981; }
+        .photo-upload {
+            border: 3px dashed #3b82f6;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            min-height: 120px;
+            transition: all 0.2s;
+        }
+        .photo-upload:hover { border-color: #1d4ed8; background-color: #eff6ff; }
+        .photo-upload:active { transform: scale(0.98); }
+        .photo-upload.has-image { border-style: solid; border-color: #10b981; border-width: 3px; }
+        .photo-upload .camera-icon { font-size: 2.5rem; }
         input[type="file"] { display: none; }
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .check-item:hover { background: #f1f5f9; }
+        .check-item input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -57,25 +77,104 @@
                 <p id="vehicleName" class="font-bold text-lg">جاري التحميل...</p>
             </div>
 
+            <!-- PHOTO CAPTURE SECTION -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-3">صور المركبة (4 جهات) *</label>
+                <label class="block text-lg font-bold text-gray-700 mb-3">📸 صور المركبة (4 جهات) *</label>
+                <p class="text-sm text-gray-500 mb-4">اضغط على كل مربع لفتح الكاميرا والتصوير مباشرة</p>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoFront').click()">
+                    <!-- Front Photo -->
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-4 bg-blue-50" onclick="document.getElementById('photoFront').click()">
                         <input type="file" id="photoFront" accept="image/*" capture="environment" onchange="handlePhoto(this,'front')">
-                        <span id="frontLabel" class="text-xs text-gray-600">الأمامية - Front</span>
+                        <span class="camera-icon">📷</span>
+                        <span id="frontLabel" class="text-sm font-bold text-blue-700 mt-2">الأمامية</span>
+                        <span class="text-xs text-gray-500">Front</span>
                     </div>
-                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoBack').click()">
+                    <!-- Back Photo -->
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-4 bg-blue-50" onclick="document.getElementById('photoBack').click()">
                         <input type="file" id="photoBack" accept="image/*" capture="environment" onchange="handlePhoto(this,'back')">
-                        <span id="backLabel" class="text-xs text-gray-600">الخلفية - Back</span>
+                        <span class="camera-icon">📷</span>
+                        <span id="backLabel" class="text-sm font-bold text-blue-700 mt-2">الخلفية</span>
+                        <span class="text-xs text-gray-500">Back</span>
                     </div>
-                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoRight').click()">
+                    <!-- Right Photo -->
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-4 bg-blue-50" onclick="document.getElementById('photoRight').click()">
                         <input type="file" id="photoRight" accept="image/*" capture="environment" onchange="handlePhoto(this,'right')">
-                        <span id="rightLabel" class="text-xs text-gray-600">اليمين - Right</span>
+                        <span class="camera-icon">📷</span>
+                        <span id="rightLabel" class="text-sm font-bold text-blue-700 mt-2">اليمين</span>
+                        <span class="text-xs text-gray-500">Right</span>
                     </div>
-                    <div class="photo-upload aspect-video rounded-lg flex flex-col items-center justify-center p-4 bg-gray-50" onclick="document.getElementById('photoLeft').click()">
+                    <!-- Left Photo -->
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-4 bg-blue-50" onclick="document.getElementById('photoLeft').click()">
                         <input type="file" id="photoLeft" accept="image/*" capture="environment" onchange="handlePhoto(this,'left')">
-                        <span id="leftLabel" class="text-xs text-gray-600">اليسار - Left</span>
+                        <span class="camera-icon">📷</span>
+                        <span id="leftLabel" class="text-sm font-bold text-blue-700 mt-2">اليسار</span>
+                        <span class="text-xs text-gray-500">Left</span>
                     </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD PHOTO -->
+            <div>
+                <label class="block text-lg font-bold text-gray-700 mb-3">🚗 صورة عداد الطبلون *</label>
+                <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-6 bg-yellow-50" onclick="document.getElementById('photoDashboard').click()">
+                    <input type="file" id="photoDashboard" accept="image/*" capture="environment" onchange="handlePhoto(this,'dashboard')">
+                    <span class="camera-icon">📷</span>
+                    <span id="dashboardLabel" class="text-sm font-bold text-yellow-700 mt-2">عداد الكيلومترات</span>
+                    <span class="text-xs text-gray-500">Dashboard / Odometer</span>
+                </div>
+            </div>
+
+            <!-- LIGHTS CHECK SECTION -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-3">💡 فحص الأنوار *</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="check-item">
+                        <input type="checkbox" id="lightFront">
+                        <div>
+                            <span class="font-semibold">الأنوار الأمامية</span>
+                            <span class="text-xs text-gray-500 block">Front Lights</span>
+                        </div>
+                    </label>
+                    <label class="check-item">
+                        <input type="checkbox" id="lightBack">
+                        <div>
+                            <span class="font-semibold">الأنوار الخلفية</span>
+                            <span class="text-xs text-gray-500 block">Back Lights</span>
+                        </div>
+                    </label>
+                    <label class="check-item">
+                        <input type="checkbox" id="signalRight">
+                        <div>
+                            <span class="font-semibold">إشارة اليمين</span>
+                            <span class="text-xs text-gray-500 block">Right Signal</span>
+                        </div>
+                    </label>
+                    <label class="check-item">
+                        <input type="checkbox" id="signalLeft">
+                        <div>
+                            <span class="font-semibold">إشارة اليسار</span>
+                            <span class="text-xs text-gray-500 block">Left Signal</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- FRIDGE/COOLER CHECK -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-3">❄️ حالة الثلاجة/التبريد</label>
+                <div class="flex gap-4">
+                    <label class="check-item flex-1 justify-center">
+                        <input type="radio" name="fridgeStatus" value="working" class="w-5 h-5">
+                        <span class="font-semibold text-green-700">✅ تعمل</span>
+                    </label>
+                    <label class="check-item flex-1 justify-center">
+                        <input type="radio" name="fridgeStatus" value="not_working" class="w-5 h-5">
+                        <span class="font-semibold text-red-700">❌ لا تعمل</span>
+                    </label>
+                    <label class="check-item flex-1 justify-center">
+                        <input type="radio" name="fridgeStatus" value="no_fridge" class="w-5 h-5">
+                        <span class="font-semibold text-gray-600">🚫 لا يوجد</span>
+                    </label>
                 </div>
             </div>
 
@@ -116,7 +215,30 @@
 
         let currentDriver = null;
         let currentVehicle = null;
-        let photos = { front: null, back: null, right: null, left: null };
+        let photos = { front: null, back: null, right: null, left: null, dashboard: null };
+        let currentLocation = null;
+
+        // Get GPS location on page load
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        console.log('📍 Location captured:', currentLocation);
+                    },
+                    (error) => {
+                        console.warn('⚠️ Location error:', error.message);
+                        currentLocation = null;
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
+        }
+        getLocation(); // Start getting location immediately
 
         async function init() {
             const { data: { session } } = await mySupabase.auth.getSession();
@@ -229,8 +351,25 @@
                 return;
             }
 
-            if (!photos.front || !photos.back || !photos.right || !photos.left) {
-                alert('يرجى رفع جميع الصور الأربعة');
+            if (!photos.front || !photos.back || !photos.right || !photos.left || !photos.dashboard) {
+                alert('يرجى رفع جميع الصور الخمسة (4 جهات + عداد الطبلون)');
+                return;
+            }
+
+            // Validate lights check
+            const lightsChecked = document.getElementById('lightFront').checked &&
+                                  document.getElementById('lightBack').checked &&
+                                  document.getElementById('signalRight').checked &&
+                                  document.getElementById('signalLeft').checked;
+            if (!lightsChecked) {
+                alert('يرجى فحص جميع الأنوار والإشارات');
+                return;
+            }
+
+            // Get fridge status
+            const fridgeStatus = document.querySelector('input[name="fridgeStatus"]:checked');
+            if (!fridgeStatus) {
+                alert('يرجى تحديد حالة الثلاجة');
                 return;
             }
 
@@ -243,20 +382,27 @@
                 const inspectionCode = 'INS-' + Date.now();
 
                 // 1. Upload photos to Supabase Storage
-                submitBtn.textContent = 'جاري رفع الصورة 1/4...';
+                submitBtn.textContent = 'جاري رفع الصورة 1/5...';
                 const frontUrl = await uploadPhoto(photos.front, inspectionCode, 'front');
-                
-                submitBtn.textContent = 'جاري رفع الصورة 2/4...';
+
+                submitBtn.textContent = 'جاري رفع الصورة 2/5...';
                 const backUrl = await uploadPhoto(photos.back, inspectionCode, 'back');
-                
-                submitBtn.textContent = 'جاري رفع الصورة 3/4...';
+
+                submitBtn.textContent = 'جاري رفع الصورة 3/5...';
                 const rightUrl = await uploadPhoto(photos.right, inspectionCode, 'right');
-                
-                submitBtn.textContent = 'جاري رفع الصورة 4/4...';
+
+                submitBtn.textContent = 'جاري رفع الصورة 4/5...';
                 const leftUrl = await uploadPhoto(photos.left, inspectionCode, 'left');
+
+                submitBtn.textContent = 'جاري رفع الصورة 5/5...';
+                const dashboardUrl = await uploadPhoto(photos.dashboard, inspectionCode, 'dashboard');
 
                 // 2. Save to Supabase Database
                 submitBtn.textContent = 'جاري حفظ البيانات...';
+
+                // Refresh GPS location before saving
+                getLocation();
+
                 const { error: dbError } = await mySupabase.from('inspections').insert([{
                     inspection_code: inspectionCode,
                     driver_id: currentDriver.id,
@@ -266,36 +412,56 @@
                     photo_back: backUrl,
                     photo_right: rightUrl,
                     photo_left: leftUrl,
+                    photo_dashboard: dashboardUrl,
                     notes: document.getElementById('notes').value || '',
-                    declaration_accepted: true
+                    declaration_accepted: true,
+                    // New fields
+                    light_front: document.getElementById('lightFront').checked,
+                    light_back: document.getElementById('lightBack').checked,
+                    signal_right: document.getElementById('signalRight').checked,
+                    signal_left: document.getElementById('signalLeft').checked,
+                    fridge_status: fridgeStatus.value,
+                    gps_latitude: currentLocation?.latitude || null,
+                    gps_longitude: currentLocation?.longitude || null,
+                    gps_accuracy: currentLocation?.accuracy || null,
+                    submitted_at: new Date().toISOString()
                 }]);
 
                 if (dbError) throw dbError;
                 console.log('✅ Saved to database');
-                console.log('📸 Photo URLs:', { frontUrl, backUrl, rightUrl, leftUrl });
+                console.log('📸 Photo URLs:', { frontUrl, backUrl, rightUrl, leftUrl, dashboardUrl });
+                console.log('📍 GPS:', currentLocation);
 
                 // Success!
                 document.getElementById('successMessage').innerHTML = `
-                    ✅ تم تسجيل الفحص بنجاح!<br>
-                    <small class="block mt-2">Inspection Code: ${inspectionCode}</small>
-                    <small class="block mt-2">
-                        السائق: ${currentDriver.full_name} | المركبة: ${currentVehicle.van_code}<br>
-                        تم رفع 4 صور بنجاح إلى Supabase Storage
-                    </small>
+                    <div class="text-center">
+                        <span class="text-4xl">✅</span>
+                        <h3 class="text-xl font-bold mt-2">تم تسجيل الفحص بنجاح!</h3>
+                        <p class="text-sm mt-2">Inspection Code: <strong>${inspectionCode}</strong></p>
+                        <div class="mt-3 p-3 bg-white rounded-lg text-sm">
+                            <p><strong>السائق:</strong> ${currentDriver.full_name}</p>
+                            <p><strong>المركبة:</strong> ${currentVehicle.van_code} - ${currentVehicle.plate_number}</p>
+                            <p><strong>الصور:</strong> ✅ 5 صور مرفوعة</p>
+                            <p><strong>الأنوار:</strong> ✅ تم الفحص</p>
+                            <p><strong>الثلاجة:</strong> ${fridgeStatus.value === 'working' ? '✅ تعمل' : fridgeStatus.value === 'not_working' ? '❌ لا تعمل' : '🚫 لا يوجد'}</p>
+                            ${currentLocation ? `<p><strong>الموقع:</strong> 📍 تم التسجيل</p>` : ''}
+                        </div>
+                    </div>
                 `;
                 document.getElementById('successMessage').classList.remove('hidden');
                 
                 // Reset form
                 document.getElementById('inspectionForm').reset();
-                photos = { front: null, back: null, right: null, left: null };
+                photos = { front: null, back: null, right: null, left: null, dashboard: null };
                 document.querySelectorAll('.photo-upload').forEach(el => {
                     el.style.backgroundImage = '';
                     el.classList.remove('has-image');
                 });
-                document.getElementById('frontLabel').textContent = 'الأمامية - Front';
-                document.getElementById('backLabel').textContent = 'الخلفية - Back';
-                document.getElementById('rightLabel').textContent = 'اليمين - Right';
-                document.getElementById('leftLabel').textContent = 'اليسار - Left';
+                document.getElementById('frontLabel').textContent = 'الأمامية';
+                document.getElementById('backLabel').textContent = 'الخلفية';
+                document.getElementById('rightLabel').textContent = 'اليمين';
+                document.getElementById('leftLabel').textContent = 'اليسار';
+                document.getElementById('dashboardLabel').textContent = 'عداد الكيلومترات';
 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
