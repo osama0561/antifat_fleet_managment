@@ -31,6 +31,16 @@
         }
         .check-item:hover { background: #f1f5f9; }
         .check-item input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
+        /* Inspection Type Selection */
+        .inspection-type-option input:checked + div {
+            background: white !important;
+            color: #1d4ed8;
+            border-color: white !important;
+            transform: scale(1.02);
+        }
+        .inspection-type-option input:checked + div span:first-child {
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -49,8 +59,8 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <span id="userEmail" class="text-xs text-gray-600"></span>
-                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-md">تسجيل الخروج</button>
+                <a href="index.html" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md">← الرئيسية</a>
+                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-md">خروج</button>
             </div>
         </div>
     </header>
@@ -61,7 +71,31 @@
         <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700"></div>
 
         <form id="inspectionForm" class="bg-white rounded-xl shadow-sm p-6 space-y-6">
-            
+
+            <!-- INSPECTION TYPE SELECTOR - CRITICAL -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+                <h2 class="text-xl font-bold text-center mb-4">نوع العملية</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <label id="receiveOption" class="inspection-type-option cursor-pointer">
+                        <input type="radio" name="inspectionType" value="receive" class="hidden" required>
+                        <div class="bg-white/20 hover:bg-white/30 rounded-xl p-4 text-center transition-all border-2 border-transparent">
+                            <span class="text-4xl block mb-2">📥</span>
+                            <span class="text-lg font-bold block">استلام</span>
+                            <span class="text-sm opacity-80">Receive Vehicle</span>
+                        </div>
+                    </label>
+                    <label id="releaseOption" class="inspection-type-option cursor-pointer">
+                        <input type="radio" name="inspectionType" value="release" class="hidden">
+                        <div class="bg-white/20 hover:bg-white/30 rounded-xl p-4 text-center transition-all border-2 border-transparent">
+                            <span class="text-4xl block mb-2">📤</span>
+                            <span class="text-lg font-bold block">تسليم</span>
+                            <span class="text-sm opacity-80">Release Vehicle</span>
+                        </div>
+                    </label>
+                </div>
+                <p id="typeWarning" class="text-center mt-3 text-yellow-200 text-sm hidden">⚠️ يرجى اختيار نوع العملية</p>
+            </div>
+
             <div class="border-b pb-4">
                 <h2 class="text-xl font-bold text-gray-900">نموذج فحص المركبة</h2>
                 <p class="text-sm text-gray-600">يرجى ملء جميع الحقول المطلوبة وتصوير المركبة من 4 جهات</p>
@@ -246,7 +280,8 @@
                 window.location.href = 'login.html';
                 return;
             }
-            document.getElementById('userEmail').textContent = session.user.email;
+            // Session loaded successfully
+            console.log('Session loaded for:', session.user.email);
 
             const { data: driver } = await mySupabase
                 .from('drivers')
@@ -351,6 +386,15 @@
                 return;
             }
 
+            // Validate inspection type (CRITICAL)
+            const inspectionType = document.querySelector('input[name="inspectionType"]:checked');
+            if (!inspectionType) {
+                alert('⚠️ يرجى اختيار نوع العملية (استلام أو تسليم)');
+                document.getElementById('typeWarning').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('typeWarning').classList.add('hidden');
+
             if (!photos.front || !photos.back || !photos.right || !photos.left || !photos.dashboard) {
                 alert('يرجى رفع جميع الصور الخمسة (4 جهات + عداد الطبلون)');
                 return;
@@ -408,6 +452,7 @@
                     driver_id: currentDriver.id,
                     vehicle_id: currentVehicle.id,
                     location: currentVehicle.location,
+                    inspection_type: inspectionType.value, // 'receive' or 'release'
                     photo_front: frontUrl,
                     photo_back: backUrl,
                     photo_right: rightUrl,
@@ -428,17 +473,37 @@
                 }]);
 
                 if (dbError) throw dbError;
+
+                // Update vehicle status based on inspection type
+                const newVehicleStatus = inspectionType.value === 'receive' ? 'active' : 'idle';
+                const { error: vehicleError } = await mySupabase
+                    .from('vehicles')
+                    .update({ status: newVehicleStatus })
+                    .eq('id', currentVehicle.id);
+
+                if (vehicleError) {
+                    console.warn('⚠️ Could not update vehicle status:', vehicleError);
+                } else {
+                    console.log(`✅ Vehicle status updated to: ${newVehicleStatus}`);
+                }
+
                 console.log('✅ Saved to database');
                 console.log('📸 Photo URLs:', { frontUrl, backUrl, rightUrl, leftUrl, dashboardUrl });
                 console.log('📍 GPS:', currentLocation);
 
-                // Success!
+                // Success message with inspection type
+                const typeLabel = inspectionType.value === 'receive' ? '📥 استلام' : '📤 تسليم';
+                const statusLabel = inspectionType.value === 'receive' ? 'المركبة أصبحت نشطة (Active)' : 'المركبة أصبحت متوقفة (Idle)';
+
                 document.getElementById('successMessage').innerHTML = `
                     <div class="text-center">
                         <span class="text-4xl">✅</span>
                         <h3 class="text-xl font-bold mt-2">تم تسجيل الفحص بنجاح!</h3>
                         <p class="text-sm mt-2">Inspection Code: <strong>${inspectionCode}</strong></p>
                         <div class="mt-3 p-3 bg-white rounded-lg text-sm">
+                            <p class="text-lg font-bold text-blue-700">${typeLabel}</p>
+                            <p class="text-xs text-gray-500 mb-2">${statusLabel}</p>
+                            <hr class="my-2">
                             <p><strong>السائق:</strong> ${currentDriver.full_name}</p>
                             <p><strong>المركبة:</strong> ${currentVehicle.van_code} - ${currentVehicle.plate_number}</p>
                             <p><strong>الصور:</strong> ✅ 5 صور مرفوعة</p>

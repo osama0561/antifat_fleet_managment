@@ -5,6 +5,7 @@
 
 -- Add new columns to inspections table
 ALTER TABLE inspections
+ADD COLUMN IF NOT EXISTS inspection_type TEXT CHECK (inspection_type IN ('receive', 'release')),
 ADD COLUMN IF NOT EXISTS photo_dashboard TEXT,
 ADD COLUMN IF NOT EXISTS light_front BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS light_back BOOLEAN DEFAULT false,
@@ -25,6 +26,7 @@ ORDER BY ordinal_position;
 -- ========================================
 -- NOTES:
 -- ========================================
+-- inspection_type: 'receive' (driver taking vehicle) or 'release' (driver returning vehicle)
 -- photo_dashboard: URL to dashboard/odometer photo
 -- light_front: Front lights working (true/false)
 -- light_back: Back lights working (true/false)

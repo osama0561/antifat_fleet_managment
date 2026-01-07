@@ -1,12 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=login.html">
-    <title>FleetCheck - Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetCheck - الصفحة الرئيسية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .menu-card {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .menu-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .menu-card:active {
+            transform: scale(0.98);
+        }
+        .menu-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .menu-card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
 </head>
-<body>
-    <p>Redirecting to login page...</p>
-    <p>If not redirected, <a href="login.html">click here</a>.</p>
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <span class="text-2xl">🚗</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900">FleetCheck</h1>
+                    <p class="text-xs text-gray-500">Antifat Fleet Management</p>
+                </div>
+            </div>
+            <button id="logoutBtn" class="px-4 py-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-semibold">
+                تسجيل الخروج
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6">
+
+        <!-- Welcome Section -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span class="text-3xl">👤</span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">مرحباً بك</p>
+                    <h2 id="driverName" class="text-xl font-bold text-gray-900">جاري التحميل...</h2>
+                    <p id="driverCode" class="text-sm text-gray-600"></p>
+                </div>
+            </div>
+
+            <!-- Vehicle Info -->
+            <div id="vehicleInfo" class="mt-4 p-4 bg-green-50 rounded-xl">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🚐</span>
+                    <div>
+                        <p class="text-sm text-gray-600">المركبة المخصصة</p>
+                        <p id="vehicleName" class="font-bold text-green-800">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Cards -->
+        <div class="space-y-4">
+
+            <!-- Receipt & Release -->
+            <a href="inspection.html" class="menu-card block bg-white rounded-2xl shadow-sm p-6 border-r-4 border-blue-500">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <span class="text-3xl">📋</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-gray-900">استلام وتسليم المركبة</h3>
+                        <p class="text-sm text-gray-600">Receipt & Release Report</p>
+                        <p class="text-xs text-blue-600 mt-1">تسجيل فحص المركبة مع الصور</p>
+                    </div>
+                    <div class="text-gray-400">
+                        <svg class="w-6 h-6 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Maintenance Report -->
+            <div class="menu-card disabled block bg-white rounded-2xl shadow-sm p-6 border-r-4 border-yellow-500">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center">
+                        <span class="text-3xl">🔧</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-gray-900">تقرير صيانة</h3>
+                        <p class="text-sm text-gray-600">Maintenance Report</p>
+                        <p class="text-xs text-yellow-600 mt-1">⏳ قريباً - Coming Soon</p>
+                    </div>
+                    <div class="text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accident Report -->
+            <div class="menu-card disabled block bg-white rounded-2xl shadow-sm p-6 border-r-4 border-red-500">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
+                        <span class="text-3xl">🚨</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-gray-900">تقرير حادث</h3>
+                        <p class="text-sm text-gray-600">Accident Report</p>
+                        <p class="text-xs text-red-600 mt-1">⏳ قريباً - Coming Soon</p>
+                    </div>
+                    <div class="text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Info -->
+        <div class="mt-8 text-center text-sm text-gray-500">
+            <p>© 2026 Antifat Fleet Management</p>
+            <p class="mt-1">FleetCheck v1.0</p>
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function init() {
+            // Check if logged in
+            const { data: { session } } = await mySupabase.auth.getSession();
+
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Get driver info
+            const { data: driver } = await mySupabase
+                .from('drivers')
+                .select('*')
+                .eq('email', session.user.email)
+                .eq('is_active', true)
+                .single();
+
+            if (driver) {
+                document.getElementById('driverName').textContent = driver.full_name;
+                document.getElementById('driverCode').textContent = driver.driver_code;
+
+                // Get assigned vehicle
+                const { data: assignment } = await mySupabase
+                    .from('driver_vehicle_assignments')
+                    .select('vehicle_id, vehicles(*)')
+                    .eq('driver_id', driver.id)
+                    .eq('is_current', true)
+                    .single();
+
+                if (assignment?.vehicles) {
+                    document.getElementById('vehicleName').textContent =
+                        assignment.vehicles.van_code + ' - ' + assignment.vehicles.plate_number;
+                } else {
+                    document.getElementById('vehicleName').textContent = 'لا توجد مركبة مخصصة';
+                    document.getElementById('vehicleInfo').classList.remove('bg-green-50');
+                    document.getElementById('vehicleInfo').classList.add('bg-yellow-50');
+                }
+            } else {
+                document.getElementById('driverName').textContent = session.user.email;
+                document.getElementById('driverCode').textContent = 'غير مسجل كسائق';
+                document.getElementById('vehicleName').textContent = 'غير متاح';
+            }
+        }
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await mySupabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        // Initialize on load
+        init();
+    </script>
 </body>
 </html>
