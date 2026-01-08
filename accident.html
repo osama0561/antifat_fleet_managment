@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetCheck - تقرير حادث</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .photo-upload {
+            border: 3px dashed #ef4444;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            min-height: 100px;
+            transition: all 0.2s;
+        }
+        .photo-upload:hover { border-color: #dc2626; background-color: #fef2f2; }
+        .photo-upload:active { transform: scale(0.98); }
+        .photo-upload.has-image { border-style: solid; border-color: #10b981; border-width: 3px; }
+        .doc-upload {
+            border: 3px dashed #6366f1;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .doc-upload:hover { border-color: #4f46e5; background-color: #eef2ff; }
+        .doc-upload.has-file { border-style: solid; border-color: #10b981; border-width: 3px; background-color: #ecfdf5; }
+        input[type="file"] { display: none; }
+        .accident-option {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .accident-option:hover { transform: scale(1.02); }
+        .accident-option input:checked + div {
+            background: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            border-width: 2px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                    <span class="text-xl">🚨</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">تقرير حادث</h1>
+                    <p class="text-xs text-gray-500">Accident Report</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md">← الرئيسية</a>
+                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-md">خروج</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+
+        <!-- Emergency Notice -->
+        <div class="bg-red-100 border-2 border-red-300 rounded-xl p-4 mb-6">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">⚠️</span>
+                <div>
+                    <p class="font-bold text-red-800">في حالة الإصابات الخطيرة</p>
+                    <p class="text-sm text-red-700">اتصل بالطوارئ فوراً: <strong dir="ltr">911</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"></div>
+        <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700"></div>
+
+        <form id="accidentForm" class="bg-white rounded-xl shadow-sm p-6 space-y-6">
+
+            <div class="border-b pb-4">
+                <h2 class="text-xl font-bold text-gray-900">نموذج تقرير الحادث</h2>
+                <p class="text-sm text-gray-600">أبلغ عن أي حادث مروري أو ضرر للمركبة</p>
+            </div>
+
+            <div id="driverSection" class="p-4 bg-blue-50 rounded-lg">
+                <p class="text-sm text-gray-600">السائق:</p>
+                <p id="driverName" class="font-bold text-lg">جاري التحميل...</p>
+            </div>
+
+            <div id="vehicleSection" class="p-4 bg-green-50 rounded-lg">
+                <p class="text-sm text-gray-600">المركبة:</p>
+                <p id="vehicleName" class="font-bold text-lg">جاري التحميل...</p>
+            </div>
+
+            <!-- ACCIDENT TYPE SELECTION -->
+            <div>
+                <label class="block text-lg font-bold text-gray-700 mb-3">🚗 نوع الحادث *</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="accident-option">
+                        <input type="radio" name="accidentType" value="collision" class="hidden" required>
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">💥</span>
+                            <span class="font-semibold text-sm">تصادم</span>
+                            <span class="text-xs text-gray-500 block">Collision</span>
+                        </div>
+                    </label>
+                    <label class="accident-option">
+                        <input type="radio" name="accidentType" value="scratch" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🔧</span>
+                            <span class="font-semibold text-sm">خدش/صدمة</span>
+                            <span class="text-xs text-gray-500 block">Scratch/Dent</span>
+                        </div>
+                    </label>
+                    <label class="accident-option">
+                        <input type="radio" name="accidentType" value="rollover" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🔄</span>
+                            <span class="font-semibold text-sm">انقلاب</span>
+                            <span class="text-xs text-gray-500 block">Rollover</span>
+                        </div>
+                    </label>
+                    <label class="accident-option">
+                        <input type="radio" name="accidentType" value="hit_and_run" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🏃</span>
+                            <span class="font-semibold text-sm">صدم وهرب</span>
+                            <span class="text-xs text-gray-500 block">Hit & Run</span>
+                        </div>
+                    </label>
+                    <label class="accident-option">
+                        <input type="radio" name="accidentType" value="pedestrian" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">🚶</span>
+                            <span class="font-semibold text-sm">دهس</span>
+                            <span class="text-xs text-gray-500 block">Pedestrian</span>
+                        </div>
+                    </label>
+                    <label class="accident-option">
+                        <input type="radio" name="accidentType" value="other" class="hidden">
+                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-3xl block mb-1">⚙️</span>
+                            <span class="font-semibold text-sm">أخرى</span>
+                            <span class="text-xs text-gray-500 block">Other</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ACCIDENT DESCRIPTION -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-2">📝 وصف الحادث *</label>
+                <p class="text-sm text-gray-500 mb-3">اشرح ما حدث بالتفصيل</p>
+                <textarea id="description" rows="4" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0" placeholder="مثال: أثناء القيادة على شارع الملك فهد، قام السائق أمامي بالفرملة المفاجئة..."></textarea>
+            </div>
+
+            <!-- ACCIDENT LOCATION -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-2">📍 موقع الحادث</label>
+                <input type="text" id="accidentLocation" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg" placeholder="مثال: شارع الملك فهد، بالقرب من محطة أرامكو">
+                <p id="gpsStatus" class="text-xs text-gray-500 mt-2">📍 جاري تحديد الموقع...</p>
+            </div>
+
+            <!-- PHOTO CAPTURE SECTION -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-3">📸 صور الحادث *</label>
+                <p class="text-sm text-gray-500 mb-4">التقط صور توضح الأضرار - حتى 5 صور</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo1').click()">
+                        <input type="file" id="photo1" accept="image/*" capture="environment" onchange="handlePhoto(this, 1)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo1Label" class="text-xs font-bold text-red-700 mt-1">ضرر 1</span>
+                    </div>
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo2').click()">
+                        <input type="file" id="photo2" accept="image/*" capture="environment" onchange="handlePhoto(this, 2)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo2Label" class="text-xs font-bold text-red-700 mt-1">ضرر 2</span>
+                    </div>
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo3').click()">
+                        <input type="file" id="photo3" accept="image/*" capture="environment" onchange="handlePhoto(this, 3)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo3Label" class="text-xs font-bold text-red-700 mt-1">ضرر 3</span>
+                    </div>
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo4').click()">
+                        <input type="file" id="photo4" accept="image/*" capture="environment" onchange="handlePhoto(this, 4)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo4Label" class="text-xs font-bold text-red-700 mt-1">ضرر 4</span>
+                    </div>
+                    <div class="photo-upload rounded-xl flex flex-col items-center justify-center p-3" onclick="document.getElementById('photo5').click()">
+                        <input type="file" id="photo5" accept="image/*" capture="environment" onchange="handlePhoto(this, 5)">
+                        <span class="text-2xl">📷</span>
+                        <span id="photo5Label" class="text-xs font-bold text-red-700 mt-1">ضرر 5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OFFICIAL DOCUMENTS SECTION -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-3">📄 المستندات الرسمية</label>
+                <p class="text-sm text-gray-500 mb-4">ارفع تقارير نجم أو الشرطة وتقدير (صور أو PDF)</p>
+
+                <!-- Najm Report -->
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <span class="text-blue-600">1.</span> تقرير نجم (Najm Report)
+                        <span class="text-xs text-gray-500 font-normal">- أو تقرير الشرطة إذا لم يتوفر نجم</span>
+                    </label>
+                    <div class="doc-upload rounded-xl flex items-center justify-center p-4 gap-3" onclick="document.getElementById('najmReport').click()">
+                        <input type="file" id="najmReport" accept="image/*,.pdf" onchange="handleDocument(this, 'najm')">
+                        <span class="text-3xl">📋</span>
+                        <div class="text-center">
+                            <span id="najmLabel" class="text-sm font-bold text-indigo-700 block">تقرير نجم / الشرطة</span>
+                            <span class="text-xs text-gray-500">اضغط لرفع الملف</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Taqdir Report -->
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <span class="text-blue-600">2.</span> تقرير تقدير (Taqdir Report)
+                        <span class="text-xs text-gray-500 font-normal">- تقدير الأضرار</span>
+                    </label>
+                    <div class="doc-upload rounded-xl flex items-center justify-center p-4 gap-3" onclick="document.getElementById('taqdirReport').click()">
+                        <input type="file" id="taqdirReport" accept="image/*,.pdf" onchange="handleDocument(this, 'taqdir')">
+                        <span class="text-3xl">📊</span>
+                        <div class="text-center">
+                            <span id="taqdirLabel" class="text-sm font-bold text-indigo-700 block">تقرير تقدير</span>
+                            <span class="text-xs text-gray-500">اضغط لرفع الملف</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded-lg text-lg">
+                إرسال تقرير الحادث
+            </button>
+        </form>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+
+        const CONFIG = {
+            MAX_FILE_SIZE: 10 * 1024 * 1024,
+            ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/jpg', 'image/png'],
+            ALLOWED_DOC_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
+        };
+
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentDriver = null;
+        let currentVehicle = null;
+        let photos = { 1: null, 2: null, 3: null, 4: null, 5: null };
+        let documents = { najm: null, taqdir: null };
+        let currentLocation = null;
+
+        // Get GPS location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        document.getElementById('gpsStatus').innerHTML = '📍 <span class="text-green-600">تم تحديد الموقع بدقة ' + Math.round(position.coords.accuracy) + ' متر</span>';
+                    },
+                    (error) => {
+                        document.getElementById('gpsStatus').innerHTML = '⚠️ <span class="text-yellow-600">تعذر تحديد الموقع تلقائياً</span>';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
+        }
+        getLocation();
+
+        async function init() {
+            const { data: { session } } = await mySupabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: driver } = await mySupabase
+                .from('drivers')
+                .select('*')
+                .eq('email', session.user.email)
+                .eq('is_active', true)
+                .single();
+
+            if (driver) {
+                currentDriver = driver;
+                document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
+
+                const { data: assignment } = await mySupabase
+                    .from('driver_vehicle_assignments')
+                    .select('vehicle_id, vehicles(*)')
+                    .eq('driver_id', driver.id)
+                    .eq('is_current', true)
+                    .single();
+
+                if (assignment?.vehicles) {
+                    currentVehicle = assignment.vehicles;
+                    document.getElementById('vehicleName').textContent = currentVehicle.van_code + ' - ' + currentVehicle.plate_number;
+                } else {
+                    document.getElementById('vehicleName').textContent = 'لا توجد مركبة مخصصة';
+                }
+            } else {
+                document.getElementById('driverName').textContent = 'لم يتم العثور على السائق';
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await mySupabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        function handlePhoto(input, num) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!CONFIG.ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+                alert('نوع الملف غير مدعوم. يرجى اختيار صورة JPG أو PNG');
+                input.value = '';
+                return;
+            }
+
+            if (file.size > CONFIG.MAX_FILE_SIZE) {
+                alert('حجم الملف كبير جداً. الحد الأقصى 10 MB');
+                input.value = '';
+                return;
+            }
+
+            photos[num] = file;
+            const parent = input.parentElement;
+            parent.style.backgroundImage = 'url(' + URL.createObjectURL(file) + ')';
+            parent.classList.add('has-image');
+            document.getElementById('photo' + num + 'Label').textContent = '✓ تم';
+        }
+
+        function handleDocument(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!CONFIG.ALLOWED_DOC_TYPES.includes(file.type.toLowerCase())) {
+                alert('نوع الملف غير مدعوم. يرجى اختيار صورة JPG/PNG أو ملف PDF');
+                input.value = '';
+                return;
+            }
+
+            if (file.size > CONFIG.MAX_FILE_SIZE) {
+                alert('حجم الملف كبير جداً. الحد الأقصى 10 MB');
+                input.value = '';
+                return;
+            }
+
+            documents[type] = file;
+            const parent = input.parentElement;
+            parent.classList.add('has-file');
+
+            const labelId = type + 'Label';
+            const fileName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
+            document.getElementById(labelId).textContent = '✓ ' + fileName;
+        }
+
+        async function uploadFile(file, reportCode, folder, name) {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const fileName = `accidents/${reportCode}/${folder}/${name}.${fileExt}`;
+
+            const { data, error } = await mySupabase.storage
+                .from('inspections')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: true,
+                    contentType: file.type
+                });
+
+            if (error) throw new Error('فشل رفع الملف: ' + error.message);
+
+            const { data: urlData } = mySupabase.storage
+                .from('inspections')
+                .getPublicUrl(fileName);
+
+            return urlData.publicUrl;
+        }
+
+        document.getElementById('accidentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentDriver || !currentVehicle) {
+                alert('خطأ: لم يتم تحميل بيانات السائق أو المركبة');
+                return;
+            }
+
+            // Validate accident type
+            const accidentType = document.querySelector('input[name="accidentType"]:checked');
+            if (!accidentType) {
+                alert('يرجى اختيار نوع الحادث');
+                return;
+            }
+
+            // Validate description
+            const description = document.getElementById('description').value.trim();
+            if (!description) {
+                alert('يرجى كتابة وصف للحادث');
+                return;
+            }
+
+            // Validate at least 1 photo
+            const hasPhotos = Object.values(photos).some(p => p !== null);
+            if (!hasPhotos) {
+                alert('يرجى التقاط صورة واحدة على الأقل');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+
+            try {
+                const reportCode = 'ACC-' + Date.now();
+
+                // Upload photos
+                let photoUrls = { photo1: null, photo2: null, photo3: null, photo4: null, photo5: null };
+                let uploadCount = 0;
+                let totalUploads = Object.values(photos).filter(p => p).length +
+                                   Object.values(documents).filter(d => d).length;
+
+                for (let i = 1; i <= 5; i++) {
+                    if (photos[i]) {
+                        uploadCount++;
+                        submitBtn.textContent = `جاري رفع الملفات ${uploadCount}/${totalUploads}...`;
+                        photoUrls['photo' + i] = await uploadFile(photos[i], reportCode, 'photos', 'damage' + i);
+                    }
+                }
+
+                // Upload documents
+                let docUrls = { najm: null, taqdir: null };
+
+                if (documents.najm) {
+                    uploadCount++;
+                    submitBtn.textContent = `جاري رفع الملفات ${uploadCount}/${totalUploads}...`;
+                    docUrls.najm = await uploadFile(documents.najm, reportCode, 'docs', 'najm_report');
+                }
+
+                if (documents.taqdir) {
+                    uploadCount++;
+                    submitBtn.textContent = `جاري رفع الملفات ${uploadCount}/${totalUploads}...`;
+                    docUrls.taqdir = await uploadFile(documents.taqdir, reportCode, 'docs', 'taqdir_report');
+                }
+
+                submitBtn.textContent = 'جاري حفظ البيانات...';
+
+                const { error: dbError } = await mySupabase.from('accident_reports').insert([{
+                    report_code: reportCode,
+                    driver_id: currentDriver.id,
+                    vehicle_id: currentVehicle.id,
+                    accident_type: accidentType.value,
+                    description: description,
+                    accident_location: document.getElementById('accidentLocation').value || null,
+                    photo_1: photoUrls.photo1,
+                    photo_2: photoUrls.photo2,
+                    photo_3: photoUrls.photo3,
+                    photo_4: photoUrls.photo4,
+                    photo_5: photoUrls.photo5,
+                    najm_report: docUrls.najm,
+                    taqdir_report: docUrls.taqdir,
+                    gps_latitude: currentLocation?.latitude || null,
+                    gps_longitude: currentLocation?.longitude || null,
+                    gps_accuracy: currentLocation?.accuracy || null,
+                    status: 'pending',
+                    submitted_at: new Date().toISOString()
+                }]);
+
+                if (dbError) throw dbError;
+
+                // Update vehicle status to 'accident'
+                await mySupabase
+                    .from('vehicles')
+                    .update({ status: 'accident' })
+                    .eq('id', currentVehicle.id);
+
+                const accidentLabels = {
+                    collision: 'تصادم', scratch: 'خدش/صدمة', rollover: 'انقلاب',
+                    hit_and_run: 'صدم وهرب', pedestrian: 'دهس', other: 'أخرى'
+                };
+
+                const photoCount = Object.values(photos).filter(p => p).length;
+
+                document.getElementById('successMessage').innerHTML = `
+                    <div class="text-center">
+                        <span class="text-4xl">✅</span>
+                        <h3 class="text-xl font-bold mt-2">تم إرسال تقرير الحادث!</h3>
+                        <p class="text-sm mt-2">Report Code: <strong>${reportCode}</strong></p>
+                        <div class="mt-3 p-3 bg-white rounded-lg text-sm text-right">
+                            <p><strong>السائق:</strong> ${currentDriver.full_name}</p>
+                            <p><strong>المركبة:</strong> ${currentVehicle.van_code}</p>
+                            <p><strong>نوع الحادث:</strong> ${accidentLabels[accidentType.value]}</p>
+                            <p><strong>صور الأضرار:</strong> ${photoCount} صور</p>
+                            <p><strong>تقرير نجم/الشرطة:</strong> ${docUrls.najm ? '✅ مرفق' : '❌ غير مرفق'}</p>
+                            <p><strong>تقرير تقدير:</strong> ${docUrls.taqdir ? '✅ مرفق' : '❌ غير مرفق'}</p>
+                        </div>
+                        <p class="text-xs text-red-600 mt-3 font-bold">⚠️ تم تحديث حالة المركبة إلى "حادث"</p>
+                        <p class="text-xs text-gray-500 mt-1">سيتم التواصل معك قريباً</p>
+                    </div>
+                `;
+                document.getElementById('successMessage').classList.remove('hidden');
+
+                // Reset form
+                document.getElementById('accidentForm').reset();
+                photos = { 1: null, 2: null, 3: null, 4: null, 5: null };
+                documents = { najm: null, taqdir: null };
+                document.querySelectorAll('.photo-upload').forEach(el => {
+                    el.style.backgroundImage = '';
+                    el.classList.remove('has-image');
+                });
+                document.querySelectorAll('.doc-upload').forEach(el => {
+                    el.classList.remove('has-file');
+                });
+                document.getElementById('photo1Label').textContent = 'ضرر 1';
+                document.getElementById('photo2Label').textContent = 'ضرر 2';
+                document.getElementById('photo3Label').textContent = 'ضرر 3';
+                document.getElementById('photo4Label').textContent = 'ضرر 4';
+                document.getElementById('photo5Label').textContent = 'ضرر 5';
+                document.getElementById('najmLabel').textContent = 'تقرير نجم / الشرطة';
+                document.getElementById('taqdirLabel').textContent = 'تقرير تقدير';
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('errorMessage').textContent = '❌ خطأ: ' + error.message;
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'إرسال تقرير الحادث';
+        });
+
+        init();
+    </script>
+</body>
+</html>
