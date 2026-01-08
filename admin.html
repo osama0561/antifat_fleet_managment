@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetCheck - لوحة التحكم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tab-btn.active { background: #3b82f6; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .status-badge { padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-idle { background: #e5e7eb; color: #374151; }
+        .status-accident { background: #fee2e2; color: #991b1b; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .urgency-high { background: #fee2e2; color: #991b1b; }
+        .urgency-medium { background: #fef3c7; color: #92400e; }
+        .urgency-low { background: #d1fae5; color: #065f46; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="text-xl">⚙️</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">FleetCheck Admin</h1>
+                    <p class="text-xs text-gray-500">لوحة التحكم</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="adminName" class="text-sm text-gray-600"></span>
+                <button id="logoutBtn" class="px-4 py-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg">
+                    خروج
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl">🚐</span>
+                    <div class="text-left">
+                        <p id="statVehicles" class="text-2xl font-bold text-gray-900">-</p>
+                        <p class="text-xs text-gray-500">المركبات</p>
+                    </div>
+                </div>
+                <div id="vehicleBreakdown" class="mt-2 text-xs text-gray-500"></div>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl">👥</span>
+                    <div class="text-left">
+                        <p id="statDrivers" class="text-2xl font-bold text-gray-900">-</p>
+                        <p class="text-xs text-gray-500">السائقين</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-r-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl">📋</span>
+                    <div class="text-left">
+                        <p id="statInspections" class="text-2xl font-bold text-blue-600">-</p>
+                        <p class="text-xs text-gray-500">الفحوصات اليوم</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-r-4 border-yellow-500">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl">🔧</span>
+                    <div class="text-left">
+                        <p id="statMaintenance" class="text-2xl font-bold text-yellow-600">-</p>
+                        <p class="text-xs text-gray-500">صيانة معلقة</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-r-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <span class="text-2xl">🚨</span>
+                    <div class="text-left">
+                        <p id="statAccidents" class="text-2xl font-bold text-red-600">-</p>
+                        <p class="text-xs text-gray-500">حوادث معلقة</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="drivers">
+                👥 السائقين
+            </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="vehicles">
+                🚐 المركبات
+            </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="inspections">
+                📋 الفحوصات
+            </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="maintenance">
+                🔧 الصيانة
+            </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="accidents">
+                🚨 الحوادث
+            </button>
+        </div>
+
+        <!-- DRIVERS TAB -->
+        <div id="drivers-tab" class="tab-content active">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-bold">إدارة السائقين</h2>
+                    <button onclick="showAddDriverModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                        + إضافة سائق
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="flex gap-3 mb-4">
+                        <input type="text" id="driverSearch" placeholder="بحث بالاسم أو الكود..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        <select id="driverFilter" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">الكل</option>
+                            <option value="active">نشط</option>
+                            <option value="inactive">غير نشط</option>
+                            <option value="temporary">مؤقت</option>
+                        </select>
+                    </div>
+                    <div id="driversList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VEHICLES TAB -->
+        <div id="vehicles-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-bold">إدارة المركبات</h2>
+                    <button onclick="showAddVehicleModal()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                        + إضافة مركبة
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="flex gap-3 mb-4">
+                        <input type="text" id="vehicleSearch" placeholder="بحث بالكود أو رقم اللوحة..." class="flex-1 px-3 py-2 border rounded-lg text-sm">
+                        <select id="vehicleFilter" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">الكل</option>
+                            <option value="active">نشط</option>
+                            <option value="idle">متوقف</option>
+                            <option value="accident">حادث</option>
+                        </select>
+                    </div>
+                    <div id="vehiclesList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INSPECTIONS TAB -->
+        <div id="inspections-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b">
+                    <h2 class="text-lg font-bold">تقارير الفحص (استلام/تسليم)</h2>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <input type="date" id="inspectionDate" class="px-3 py-2 border rounded-lg text-sm">
+                        <select id="inspectionType" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">الكل</option>
+                            <option value="receive">استلام</option>
+                            <option value="release">تسليم</option>
+                        </select>
+                        <button onclick="loadInspections()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">بحث</button>
+                    </div>
+                    <div id="inspectionsList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">اختر تاريخ للبحث</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAINTENANCE TAB -->
+        <div id="maintenance-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b">
+                    <h2 class="text-lg font-bold">طلبات الصيانة</h2>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <select id="maintenanceStatus" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="pending">معلقة</option>
+                            <option value="in_progress">قيد التنفيذ</option>
+                            <option value="completed">مكتملة</option>
+                            <option value="all">الكل</option>
+                        </select>
+                        <select id="maintenanceUrgency" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">كل الأولويات</option>
+                            <option value="high">عالية</option>
+                            <option value="medium">متوسطة</option>
+                            <option value="low">منخفضة</option>
+                        </select>
+                        <button onclick="loadMaintenance()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm">بحث</button>
+                    </div>
+                    <div id="maintenanceList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCIDENTS TAB -->
+        <div id="accidents-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b">
+                    <h2 class="text-lg font-bold">تقارير الحوادث</h2>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <select id="accidentStatus" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="pending">معلقة</option>
+                            <option value="under_investigation">قيد التحقيق</option>
+                            <option value="resolved">تم الحل</option>
+                            <option value="all">الكل</option>
+                        </select>
+                        <button onclick="loadAccidents()" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">بحث</button>
+                    </div>
+                    <div id="accidentsList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ADD DRIVER MODAL -->
+    <div id="addDriverModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="text-lg font-bold">إضافة سائق جديد</h3>
+                <button onclick="closeModal('addDriverModal')" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <form id="addDriverForm" class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">الاسم الكامل *</label>
+                    <input type="text" name="full_name" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">البريد الإلكتروني *</label>
+                    <input type="email" name="email" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">كود السائق *</label>
+                    <input type="text" name="driver_code" required class="w-full px-3 py-2 border rounded-lg" placeholder="DRV-001">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">رقم الجوال</label>
+                    <input type="tel" name="phone" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">نوع السائق</label>
+                    <select name="driver_type" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="permanent">دائم</option>
+                        <option value="temporary">مؤقت (يومي)</option>
+                    </select>
+                </div>
+                <div id="tempDates" class="hidden space-y-2">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">تاريخ البداية</label>
+                        <input type="date" name="temp_start_date" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">تاريخ النهاية</label>
+                        <input type="date" name="temp_end_date" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">تاريخ انتهاء الرخصة</label>
+                    <input type="date" name="license_expiry" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">ملاحظات</label>
+                    <textarea name="admin_notes" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModal('addDriverModal')" class="flex-1 px-4 py-2 border rounded-lg">إلغاء</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">إضافة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD VEHICLE MODAL -->
+    <div id="addVehicleModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="text-lg font-bold">إضافة مركبة جديدة</h3>
+                <button onclick="closeModal('addVehicleModal')" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <form id="addVehicleForm" class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-1">كود المركبة *</label>
+                    <input type="text" name="van_code" required class="w-full px-3 py-2 border rounded-lg" placeholder="VAN-001">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">رقم اللوحة *</label>
+                    <input type="text" name="plate_number" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">الموقع</label>
+                    <input type="text" name="location" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">تاريخ انتهاء التسجيل</label>
+                    <input type="date" name="registration_expiry" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">تاريخ انتهاء التأمين</label>
+                    <input type="date" name="insurance_expiry" class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">ملاحظات</label>
+                    <textarea name="admin_notes" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModal('addVehicleModal')" class="flex-1 px-4 py-2 border rounded-lg">إلغاء</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">إضافة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div id="detailModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 id="detailTitle" class="text-lg font-bold">تفاصيل</h3>
+                <button onclick="closeModal('detailModal')" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div id="detailContent" class="p-4">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentAdmin = null;
+
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        async function init() {
+            const { data: { session } } = await mySupabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Verify admin role
+            const { data: admin } = await mySupabase
+                .from('drivers')
+                .select('*')
+                .eq('email', session.user.email)
+                .eq('role', 'admin')
+                .single();
+
+            if (!admin) {
+                alert('غير مصرح لك بالوصول إلى هذه الصفحة');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentAdmin = admin;
+            document.getElementById('adminName').textContent = admin.full_name;
+
+            // Load initial data
+            loadStats();
+            loadDrivers();
+            loadMaintenance();
+            loadAccidents();
+        }
+
+        // ========================================
+        // STATS
+        // ========================================
+        async function loadStats() {
+            // Vehicles
+            const { data: vehicles } = await mySupabase.from('vehicles').select('status');
+            if (vehicles) {
+                document.getElementById('statVehicles').textContent = vehicles.length;
+                const active = vehicles.filter(v => v.status === 'active').length;
+                const idle = vehicles.filter(v => v.status === 'idle').length;
+                const accident = vehicles.filter(v => v.status === 'accident').length;
+                document.getElementById('vehicleBreakdown').innerHTML =
+                    `<span class="text-green-600">${active} نشط</span> | <span class="text-gray-600">${idle} متوقف</span> | <span class="text-red-600">${accident} حادث</span>`;
+            }
+
+            // Drivers
+            const { data: drivers } = await mySupabase.from('drivers').select('id').eq('is_active', true).neq('role', 'admin');
+            document.getElementById('statDrivers').textContent = drivers?.length || 0;
+
+            // Today's inspections
+            const today = new Date().toISOString().split('T')[0];
+            const { data: inspections } = await mySupabase
+                .from('inspections')
+                .select('id')
+                .gte('submitted_at', today + 'T00:00:00')
+                .lte('submitted_at', today + 'T23:59:59');
+            document.getElementById('statInspections').textContent = inspections?.length || 0;
+
+            // Pending maintenance
+            const { data: maintenance } = await mySupabase
+                .from('maintenance_reports')
+                .select('id')
+                .eq('status', 'pending');
+            document.getElementById('statMaintenance').textContent = maintenance?.length || 0;
+
+            // Pending accidents
+            const { data: accidents } = await mySupabase
+                .from('accident_reports')
+                .select('id')
+                .eq('status', 'pending');
+            document.getElementById('statAccidents').textContent = accidents?.length || 0;
+        }
+
+        // ========================================
+        // DRIVERS
+        // ========================================
+        async function loadDrivers() {
+            const search = document.getElementById('driverSearch').value.toLowerCase();
+            const filter = document.getElementById('driverFilter').value;
+
+            let query = mySupabase
+                .from('drivers')
+                .select('*, driver_vehicle_assignments(vehicles(van_code, plate_number))')
+                .neq('role', 'admin')
+                .order('full_name');
+
+            if (filter === 'active') query = query.eq('is_active', true);
+            if (filter === 'inactive') query = query.eq('is_active', false);
+            if (filter === 'temporary') query = query.eq('driver_type', 'temporary');
+
+            const { data: drivers, error } = await query;
+
+            if (error) {
+                document.getElementById('driversList').innerHTML = '<p class="text-red-500 text-center">خطأ في تحميل البيانات</p>';
+                return;
+            }
+
+            let filtered = drivers;
+            if (search) {
+                filtered = drivers.filter(d =>
+                    d.full_name.toLowerCase().includes(search) ||
+                    d.driver_code.toLowerCase().includes(search)
+                );
+            }
+
+            if (filtered.length === 0) {
+                document.getElementById('driversList').innerHTML = '<p class="text-gray-500 text-center py-8">لا يوجد سائقين</p>';
+                return;
+            }
+
+            document.getElementById('driversList').innerHTML = filtered.map(driver => {
+                const vehicle = driver.driver_vehicle_assignments?.[0]?.vehicles;
+                const statusClass = driver.is_active ? 'status-active' : 'status-idle';
+                const statusText = driver.is_active ? 'نشط' : 'غير نشط';
+                const typeText = driver.driver_type === 'temporary' ? '(مؤقت)' : '';
+
+                return `
+                    <div class="border rounded-lg p-3 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span>👤</span>
+                            </div>
+                            <div>
+                                <p class="font-semibold">${driver.full_name} <span class="text-xs text-gray-500">${typeText}</span></p>
+                                <p class="text-xs text-gray-500">${driver.driver_code} | ${driver.email}</p>
+                                <p class="text-xs text-gray-400">${vehicle ? vehicle.van_code + ' - ' + vehicle.plate_number : 'لا توجد مركبة'}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            <button onclick="editDriver('${driver.id}')" class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded">تعديل</button>
+                            <button onclick="toggleDriverStatus('${driver.id}', ${driver.is_active})" class="px-2 py-1 text-xs ${driver.is_active ? 'bg-red-100 hover:bg-red-200 text-red-700' : 'bg-green-100 hover:bg-green-200 text-green-700'} rounded">
+                                ${driver.is_active ? 'تعطيل' : 'تفعيل'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleDriverStatus(id, currentStatus) {
+            if (!confirm(currentStatus ? 'هل تريد تعطيل هذا السائق؟' : 'هل تريد تفعيل هذا السائق؟')) return;
+
+            await mySupabase.from('drivers').update({ is_active: !currentStatus }).eq('id', id);
+            await logAction('toggle_driver_status', 'driver', id, { new_status: !currentStatus });
+            loadDrivers();
+            loadStats();
+        }
+
+        function editDriver(id) {
+            alert('ميزة التعديل قيد التطوير');
+        }
+
+        // ========================================
+        // VEHICLES
+        // ========================================
+        async function loadVehicles() {
+            const search = document.getElementById('vehicleSearch').value.toLowerCase();
+            const filter = document.getElementById('vehicleFilter').value;
+
+            let query = mySupabase
+                .from('vehicles')
+                .select('*, driver_vehicle_assignments(drivers(full_name, driver_code))')
+                .order('van_code');
+
+            if (filter !== 'all') query = query.eq('status', filter);
+
+            const { data: vehicles, error } = await query;
+
+            if (error) {
+                document.getElementById('vehiclesList').innerHTML = '<p class="text-red-500 text-center">خطأ في تحميل البيانات</p>';
+                return;
+            }
+
+            let filtered = vehicles;
+            if (search) {
+                filtered = vehicles.filter(v =>
+                    v.van_code.toLowerCase().includes(search) ||
+                    v.plate_number.toLowerCase().includes(search)
+                );
+            }
+
+            if (filtered.length === 0) {
+                document.getElementById('vehiclesList').innerHTML = '<p class="text-gray-500 text-center py-8">لا توجد مركبات</p>';
+                return;
+            }
+
+            document.getElementById('vehiclesList').innerHTML = filtered.map(vehicle => {
+                const driver = vehicle.driver_vehicle_assignments?.[0]?.drivers;
+                const statusClass = 'status-' + vehicle.status;
+
+                return `
+                    <div class="border rounded-lg p-3 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <span>🚐</span>
+                            </div>
+                            <div>
+                                <p class="font-semibold">${vehicle.van_code}</p>
+                                <p class="text-xs text-gray-500">${vehicle.plate_number}</p>
+                                <p class="text-xs text-gray-400">${driver ? driver.full_name : 'غير مخصصة'}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="status-badge ${statusClass}">${vehicle.status}</span>
+                            <select onchange="updateVehicleStatus('${vehicle.id}', this.value)" class="text-xs border rounded px-2 py-1">
+                                <option value="active" ${vehicle.status === 'active' ? 'selected' : ''}>نشط</option>
+                                <option value="idle" ${vehicle.status === 'idle' ? 'selected' : ''}>متوقف</option>
+                                <option value="accident" ${vehicle.status === 'accident' ? 'selected' : ''}>حادث</option>
+                                <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>صيانة</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateVehicleStatus(id, newStatus) {
+            await mySupabase.from('vehicles').update({ status: newStatus }).eq('id', id);
+            await logAction('update_vehicle_status', 'vehicle', id, { new_status: newStatus });
+            loadVehicles();
+            loadStats();
+        }
+
+        // ========================================
+        // INSPECTIONS
+        // ========================================
+        async function loadInspections() {
+            const date = document.getElementById('inspectionDate').value;
+            const type = document.getElementById('inspectionType').value;
+
+            if (!date) {
+                document.getElementById('inspectionsList').innerHTML = '<p class="text-gray-500 text-center py-8">اختر تاريخ للبحث</p>';
+                return;
+            }
+
+            let query = mySupabase
+                .from('inspections')
+                .select('*, drivers(full_name, driver_code), vehicles(van_code, plate_number)')
+                .gte('submitted_at', date + 'T00:00:00')
+                .lte('submitted_at', date + 'T23:59:59')
+                .order('submitted_at', { ascending: false });
+
+            if (type !== 'all') query = query.eq('inspection_type', type);
+
+            const { data, error } = await query;
+
+            if (error || !data || data.length === 0) {
+                document.getElementById('inspectionsList').innerHTML = '<p class="text-gray-500 text-center py-8">لا توجد فحوصات في هذا التاريخ</p>';
+                return;
+            }
+
+            document.getElementById('inspectionsList').innerHTML = data.map(i => {
+                const typeLabel = i.inspection_type === 'receive' ? '📥 استلام' : '📤 تسليم';
+                const time = new Date(i.submitted_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+
+                return `
+                    <div class="border rounded-lg p-3 hover:bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold">${i.drivers?.full_name || 'غير معروف'}</p>
+                                <p class="text-xs text-gray-500">${i.vehicles?.van_code || ''} | ${time}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">${typeLabel}</span>
+                                <button onclick="showInspectionDetail('${i.id}')" class="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded">عرض</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function showInspectionDetail(id) {
+            const { data: i } = await mySupabase
+                .from('inspections')
+                .select('*, drivers(full_name), vehicles(van_code, plate_number)')
+                .eq('id', id)
+                .single();
+
+            if (!i) return;
+
+            const typeLabel = i.inspection_type === 'receive' ? 'استلام' : 'تسليم';
+            const photos = [i.photo_front, i.photo_back, i.photo_right, i.photo_left, i.photo_dashboard].filter(p => p);
+
+            document.getElementById('detailTitle').textContent = 'تفاصيل الفحص - ' + i.inspection_code;
+            document.getElementById('detailContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>السائق:</strong> ${i.drivers?.full_name}</div>
+                        <div><strong>المركبة:</strong> ${i.vehicles?.van_code}</div>
+                        <div><strong>النوع:</strong> ${typeLabel}</div>
+                        <div><strong>التاريخ:</strong> ${new Date(i.submitted_at).toLocaleString('ar-SA')}</div>
+                        <div><strong>الأنوار الأمامية:</strong> ${i.light_front ? '✅' : '❌'}</div>
+                        <div><strong>الأنوار الخلفية:</strong> ${i.light_back ? '✅' : '❌'}</div>
+                        <div><strong>إشارة اليمين:</strong> ${i.signal_right ? '✅' : '❌'}</div>
+                        <div><strong>إشارة اليسار:</strong> ${i.signal_left ? '✅' : '❌'}</div>
+                        <div><strong>الثلاجة:</strong> ${i.fridge_status || '-'}</div>
+                    </div>
+                    ${i.notes ? `<div class="p-3 bg-gray-50 rounded"><strong>ملاحظات:</strong> ${i.notes}</div>` : ''}
+                    <div>
+                        <strong>الصور:</strong>
+                        <div class="grid grid-cols-3 gap-2 mt-2">
+                            ${photos.map(p => `<img src="${p}" class="rounded border cursor-pointer hover:opacity-80" onclick="window.open('${p}')">`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // ========================================
+        // MAINTENANCE
+        // ========================================
+        async function loadMaintenance() {
+            const status = document.getElementById('maintenanceStatus').value;
+            const urgency = document.getElementById('maintenanceUrgency').value;
+
+            let query = mySupabase
+                .from('maintenance_reports')
+                .select('*, drivers(full_name), vehicles(van_code)')
+                .order('submitted_at', { ascending: false })
+                .limit(50);
+
+            if (status !== 'all') query = query.eq('status', status);
+            if (urgency !== 'all') query = query.eq('urgency', urgency);
+
+            const { data, error } = await query;
+
+            if (error || !data || data.length === 0) {
+                document.getElementById('maintenanceList').innerHTML = '<p class="text-gray-500 text-center py-8">لا توجد طلبات صيانة</p>';
+                return;
+            }
+
+            document.getElementById('maintenanceList').innerHTML = data.map(m => {
+                const urgencyClass = 'urgency-' + m.urgency;
+                const urgencyLabel = { high: 'عالية', medium: 'متوسطة', low: 'منخفضة' }[m.urgency];
+                const statusLabel = { pending: 'معلقة', in_progress: 'قيد التنفيذ', completed: 'مكتملة' }[m.status];
+
+                return `
+                    <div class="border rounded-lg p-3 hover:bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold">${m.report_code}</p>
+                                <p class="text-xs text-gray-500">${m.drivers?.full_name} | ${m.vehicles?.van_code}</p>
+                                <p class="text-xs text-gray-400 truncate max-w-xs">${m.description?.substring(0, 50)}...</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="status-badge ${urgencyClass}">${urgencyLabel}</span>
+                                <select onchange="updateMaintenanceStatus('${m.id}', this.value)" class="text-xs border rounded px-2 py-1">
+                                    <option value="pending" ${m.status === 'pending' ? 'selected' : ''}>معلقة</option>
+                                    <option value="in_progress" ${m.status === 'in_progress' ? 'selected' : ''}>قيد التنفيذ</option>
+                                    <option value="completed" ${m.status === 'completed' ? 'selected' : ''}>مكتملة</option>
+                                </select>
+                                <button onclick="showMaintenanceDetail('${m.id}')" class="px-3 py-1 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded">عرض</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateMaintenanceStatus(id, newStatus) {
+            await mySupabase.from('maintenance_reports').update({ status: newStatus }).eq('id', id);
+            await logAction('update_maintenance_status', 'maintenance', id, { new_status: newStatus });
+            loadMaintenance();
+            loadStats();
+        }
+
+        async function showMaintenanceDetail(id) {
+            const { data: m } = await mySupabase
+                .from('maintenance_reports')
+                .select('*, drivers(full_name), vehicles(van_code)')
+                .eq('id', id)
+                .single();
+
+            if (!m) return;
+
+            const photos = [m.photo_1, m.photo_2, m.photo_3].filter(p => p);
+            const issues = m.issue_types?.join(', ') || '-';
+
+            document.getElementById('detailTitle').textContent = 'تفاصيل الصيانة - ' + m.report_code;
+            document.getElementById('detailContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>السائق:</strong> ${m.drivers?.full_name}</div>
+                        <div><strong>المركبة:</strong> ${m.vehicles?.van_code}</div>
+                        <div><strong>الأولوية:</strong> ${m.urgency}</div>
+                        <div><strong>الحالة:</strong> ${m.status}</div>
+                        <div><strong>أنواع المشاكل:</strong> ${issues}</div>
+                        <div><strong>قراءة العداد:</strong> ${m.odometer_reading || '-'}</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded"><strong>الوصف:</strong> ${m.description}</div>
+                    ${photos.length > 0 ? `
+                    <div>
+                        <strong>الصور:</strong>
+                        <div class="grid grid-cols-3 gap-2 mt-2">
+                            ${photos.map(p => `<img src="${p}" class="rounded border cursor-pointer hover:opacity-80" onclick="window.open('${p}')">`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // ========================================
+        // ACCIDENTS
+        // ========================================
+        async function loadAccidents() {
+            const status = document.getElementById('accidentStatus').value;
+
+            let query = mySupabase
+                .from('accident_reports')
+                .select('*, drivers(full_name), vehicles(van_code)')
+                .order('submitted_at', { ascending: false })
+                .limit(50);
+
+            if (status !== 'all') query = query.eq('status', status);
+
+            const { data, error } = await query;
+
+            if (error || !data || data.length === 0) {
+                document.getElementById('accidentsList').innerHTML = '<p class="text-gray-500 text-center py-8">لا توجد تقارير حوادث</p>';
+                return;
+            }
+
+            const typeLabels = {
+                collision: 'تصادم', scratch: 'خدش', rollover: 'انقلاب',
+                hit_and_run: 'صدم وهرب', pedestrian: 'دهس', other: 'أخرى'
+            };
+
+            document.getElementById('accidentsList').innerHTML = data.map(a => {
+                const statusLabel = { pending: 'معلقة', under_investigation: 'قيد التحقيق', resolved: 'تم الحل', closed: 'مغلقة' }[a.status];
+
+                return `
+                    <div class="border rounded-lg p-3 hover:bg-gray-50 border-r-4 border-red-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold">${a.report_code}</p>
+                                <p class="text-xs text-gray-500">${a.drivers?.full_name} | ${a.vehicles?.van_code}</p>
+                                <p class="text-xs text-red-600">${typeLabels[a.accident_type] || a.accident_type}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select onchange="updateAccidentStatus('${a.id}', this.value)" class="text-xs border rounded px-2 py-1">
+                                    <option value="pending" ${a.status === 'pending' ? 'selected' : ''}>معلقة</option>
+                                    <option value="under_investigation" ${a.status === 'under_investigation' ? 'selected' : ''}>قيد التحقيق</option>
+                                    <option value="resolved" ${a.status === 'resolved' ? 'selected' : ''}>تم الحل</option>
+                                    <option value="closed" ${a.status === 'closed' ? 'selected' : ''}>مغلقة</option>
+                                </select>
+                                <button onclick="showAccidentDetail('${a.id}')" class="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-700 rounded">عرض</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateAccidentStatus(id, newStatus) {
+            await mySupabase.from('accident_reports').update({ status: newStatus }).eq('id', id);
+            await logAction('update_accident_status', 'accident', id, { new_status: newStatus });
+            loadAccidents();
+            loadStats();
+        }
+
+        async function showAccidentDetail(id) {
+            const { data: a } = await mySupabase
+                .from('accident_reports')
+                .select('*, drivers(full_name), vehicles(van_code)')
+                .eq('id', id)
+                .single();
+
+            if (!a) return;
+
+            const photos = [a.photo_1, a.photo_2, a.photo_3, a.photo_4, a.photo_5].filter(p => p);
+            const docs = [
+                a.najm_report ? { name: 'تقرير نجم', url: a.najm_report } : null,
+                a.taqdir_report ? { name: 'تقرير تقدير', url: a.taqdir_report } : null
+            ].filter(d => d);
+
+            document.getElementById('detailTitle').textContent = 'تفاصيل الحادث - ' + a.report_code;
+            document.getElementById('detailContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>السائق:</strong> ${a.drivers?.full_name}</div>
+                        <div><strong>المركبة:</strong> ${a.vehicles?.van_code}</div>
+                        <div><strong>نوع الحادث:</strong> ${a.accident_type}</div>
+                        <div><strong>الحالة:</strong> ${a.status}</div>
+                        <div><strong>الموقع:</strong> ${a.accident_location || '-'}</div>
+                        <div><strong>التاريخ:</strong> ${new Date(a.submitted_at).toLocaleString('ar-SA')}</div>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded"><strong>الوصف:</strong> ${a.description}</div>
+                    ${docs.length > 0 ? `
+                    <div>
+                        <strong>المستندات:</strong>
+                        <div class="flex gap-2 mt-2">
+                            ${docs.map(d => `<a href="${d.url}" target="_blank" class="px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded text-sm">📄 ${d.name}</a>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${photos.length > 0 ? `
+                    <div>
+                        <strong>الصور:</strong>
+                        <div class="grid grid-cols-3 gap-2 mt-2">
+                            ${photos.map(p => `<img src="${p}" class="rounded border cursor-pointer hover:opacity-80" onclick="window.open('${p}')">`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // ========================================
+        // AUDIT LOG
+        // ========================================
+        async function logAction(action, targetType, targetId, details) {
+            await mySupabase.from('audit_log').insert([{
+                admin_email: currentAdmin.email,
+                action: action,
+                target_type: targetType,
+                target_id: targetId,
+                details: details
+            }]);
+        }
+
+        // ========================================
+        // MODALS
+        // ========================================
+        function showAddDriverModal() {
+            document.getElementById('addDriverModal').classList.add('active');
+        }
+
+        function showAddVehicleModal() {
+            document.getElementById('addVehicleModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // ========================================
+        // FORMS
+        // ========================================
+        document.getElementById('addDriverForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                full_name: form.full_name.value,
+                email: form.email.value,
+                driver_code: form.driver_code.value,
+                phone: form.phone.value || null,
+                driver_type: form.driver_type.value,
+                temp_start_date: form.temp_start_date.value || null,
+                temp_end_date: form.temp_end_date.value || null,
+                license_expiry: form.license_expiry.value || null,
+                admin_notes: form.admin_notes.value || null,
+                is_active: true,
+                role: 'driver'
+            };
+
+            const { error } = await mySupabase.from('drivers').insert([data]);
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            await logAction('add_driver', 'driver', null, { email: data.email });
+            closeModal('addDriverModal');
+            form.reset();
+            loadDrivers();
+            loadStats();
+            alert('تم إضافة السائق بنجاح');
+        });
+
+        document.getElementById('addVehicleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                van_code: form.van_code.value,
+                plate_number: form.plate_number.value,
+                location: form.location.value || null,
+                registration_expiry: form.registration_expiry.value || null,
+                insurance_expiry: form.insurance_expiry.value || null,
+                admin_notes: form.admin_notes.value || null,
+                status: 'idle'
+            };
+
+            const { error } = await mySupabase.from('vehicles').insert([data]);
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            await logAction('add_vehicle', 'vehicle', null, { van_code: data.van_code });
+            closeModal('addVehicleModal');
+            form.reset();
+            loadVehicles();
+            loadStats();
+            alert('تم إضافة المركبة بنجاح');
+        });
+
+        // Toggle temp dates visibility
+        document.querySelector('select[name="driver_type"]').addEventListener('change', function() {
+            document.getElementById('tempDates').classList.toggle('hidden', this.value !== 'temporary');
+        });
+
+        // ========================================
+        // TAB NAVIGATION
+        // ========================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab + '-tab').classList.add('active');
+
+                // Load tab data
+                if (this.dataset.tab === 'vehicles') loadVehicles();
+            });
+        });
+
+        // ========================================
+        // SEARCH HANDLERS
+        // ========================================
+        document.getElementById('driverSearch').addEventListener('input', loadDrivers);
+        document.getElementById('driverFilter').addEventListener('change', loadDrivers);
+        document.getElementById('vehicleSearch').addEventListener('input', loadVehicles);
+        document.getElementById('vehicleFilter').addEventListener('change', loadVehicles);
+
+        // ========================================
+        // LOGOUT
+        // ========================================
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await mySupabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

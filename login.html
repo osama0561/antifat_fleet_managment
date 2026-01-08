@@ -77,12 +77,40 @@
                     email: email,
                     password: password
                 });
-                
+
                 if (error) throw error;
-                
+
                 console.log('Login successful!');
-                window.location.href = 'index.html';
-                
+
+                // Check user role and redirect accordingly
+                const { data: userData, error: userError } = await mySupabase
+                    .from('drivers')
+                    .select('role, is_active')
+                    .eq('email', email)
+                    .single();
+
+                if (userError || !userData) {
+                    throw new Error('لم يتم العثور على المستخدم في النظام');
+                }
+
+                if (!userData.is_active) {
+                    await mySupabase.auth.signOut();
+                    throw new Error('حسابك غير نشط. تواصل مع الإدارة');
+                }
+
+                // Update last login timestamp
+                await mySupabase
+                    .from('drivers')
+                    .update({ last_login: new Date().toISOString() })
+                    .eq('email', email);
+
+                // Redirect based on role
+                if (userData.role === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+
             } catch (error) {
                 console.error('Login failed:', error.message);
                 errorMessage.textContent = 'خطأ في تسجيل الدخول: ' + error.message;
