@@ -115,16 +115,30 @@
             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="accidents">
                 🚨 الحوادث
             </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="deliveries">
+                🍱 التوصيلات
+            </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="attendance">
+                📅 الحضور
+            </button>
         </div>
 
         <!-- DRIVERS TAB -->
         <div id="drivers-tab" class="tab-content active">
             <div class="bg-white rounded-xl shadow-sm">
-                <div class="p-4 border-b flex items-center justify-between">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
                     <h2 class="text-lg font-bold">إدارة السائقين</h2>
-                    <button onclick="showAddDriverModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
-                        + إضافة سائق
-                    </button>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportDriversCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                            📥 تصدير CSV
+                        </button>
+                        <button onclick="showBulkImportModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm">
+                            📤 استيراد CSV
+                        </button>
+                        <button onclick="showAddDriverModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                            + إضافة سائق
+                        </button>
+                    </div>
                 </div>
                 <div class="p-4">
                     <div class="flex gap-3 mb-4">
@@ -146,11 +160,16 @@
         <!-- VEHICLES TAB -->
         <div id="vehicles-tab" class="tab-content">
             <div class="bg-white rounded-xl shadow-sm">
-                <div class="p-4 border-b flex items-center justify-between">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
                     <h2 class="text-lg font-bold">إدارة المركبات</h2>
-                    <button onclick="showAddVehicleModal()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
-                        + إضافة مركبة
-                    </button>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportVehiclesCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                            📥 تصدير CSV
+                        </button>
+                        <button onclick="showAddVehicleModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                            + إضافة مركبة
+                        </button>
+                    </div>
                 </div>
                 <div class="p-4">
                     <div class="flex gap-3 mb-4">
@@ -177,16 +196,22 @@
                 </div>
                 <div class="p-4">
                     <div class="flex flex-wrap gap-3 mb-4">
-                        <input type="date" id="inspectionDate" class="px-3 py-2 border rounded-lg text-sm">
-                        <select id="inspectionType" class="px-3 py-2 border rounded-lg text-sm">
+                        <select id="inspectionDateRange" class="px-3 py-2 border rounded-lg text-sm" onchange="loadInspections()">
+                            <option value="today">اليوم</option>
+                            <option value="yesterday">أمس</option>
+                            <option value="last7">آخر 7 أيام</option>
+                            <option value="last30">آخر 30 يوم</option>
+                            <option value="thisMonth">هذا الشهر</option>
+                            <option value="lastMonth">الشهر الماضي</option>
+                        </select>
+                        <select id="inspectionType" class="px-3 py-2 border rounded-lg text-sm" onchange="loadInspections()">
                             <option value="all">الكل</option>
                             <option value="receive">استلام</option>
                             <option value="release">تسليم</option>
                         </select>
-                        <button onclick="loadInspections()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">بحث</button>
                     </div>
                     <div id="inspectionsList" class="space-y-2">
-                        <p class="text-center text-gray-500 py-8">اختر تاريخ للبحث</p>
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
                     </div>
                 </div>
             </div>
@@ -195,8 +220,11 @@
         <!-- MAINTENANCE TAB -->
         <div id="maintenance-tab" class="tab-content">
             <div class="bg-white rounded-xl shadow-sm">
-                <div class="p-4 border-b">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
                     <h2 class="text-lg font-bold">طلبات الصيانة</h2>
+                    <button onclick="exportMaintenanceCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                        📥 تصدير CSV
+                    </button>
                 </div>
                 <div class="p-4">
                     <div class="flex flex-wrap gap-3 mb-4">
@@ -224,8 +252,11 @@
         <!-- ACCIDENTS TAB -->
         <div id="accidents-tab" class="tab-content">
             <div class="bg-white rounded-xl shadow-sm">
-                <div class="p-4 border-b">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
                     <h2 class="text-lg font-bold">تقارير الحوادث</h2>
+                    <button onclick="exportAccidentsCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                        📥 تصدير CSV
+                    </button>
                 </div>
                 <div class="p-4">
                     <div class="flex flex-wrap gap-3 mb-4">
@@ -239,6 +270,89 @@
                     </div>
                     <div id="accidentsList" class="space-y-2">
                         <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DELIVERIES TAB (Food Batches) -->
+        <div id="deliveries-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
+                    <h2 class="text-lg font-bold">توصيلات الطعام (المطبخ)</h2>
+                    <button onclick="exportDeliveriesCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                        📥 تصدير CSV
+                    </button>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <select id="deliveryDateRange" class="px-3 py-2 border rounded-lg text-sm" onchange="loadDeliveries()">
+                            <option value="today">اليوم</option>
+                            <option value="yesterday">أمس</option>
+                            <option value="last7">آخر 7 أيام</option>
+                            <option value="last30">آخر 30 يوم</option>
+                            <option value="thisMonth">هذا الشهر</option>
+                            <option value="lastMonth">الشهر الماضي</option>
+                        </select>
+                        <select id="deliveryStatus" class="px-3 py-2 border rounded-lg text-sm" onchange="loadDeliveries()">
+                            <option value="all">الكل</option>
+                            <option value="pending">بانتظار السائق</option>
+                            <option value="assigned">تم التعيين</option>
+                            <option value="in_progress">قيد التوصيل</option>
+                            <option value="completed">مكتمل</option>
+                        </select>
+                    </div>
+                    <div id="deliveriesList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ATTENDANCE TAB -->
+        <div id="attendance-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
+                    <h2 class="text-lg font-bold">تقرير الحضور</h2>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <select id="attendanceMonth" class="px-3 py-2 border rounded-lg text-sm" onchange="loadAttendance()">
+                            <!-- Will be populated by JS -->
+                        </select>
+                        <button onclick="exportAttendanceCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                            تصدير CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <!-- Legend -->
+                    <div class="flex gap-4 mb-4 text-sm flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 bg-green-100 text-green-700 rounded flex items-center justify-center font-bold">P</span>
+                            <span>حاضر</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 bg-red-100 text-red-700 rounded flex items-center justify-center font-bold">A</span>
+                            <span>غائب</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 bg-blue-100 text-blue-700 rounded flex items-center justify-center font-bold">D</span>
+                            <span>إجازة (اضغط للتغيير)</span>
+                        </div>
+                    </div>
+                    <!-- Stats Summary -->
+                    <div id="attendanceStats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <!-- Will be populated by JS -->
+                    </div>
+                    <!-- Attendance Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs border-collapse min-w-max" id="attendanceTable">
+                            <thead id="attendanceHeader">
+                                <!-- Will be populated by JS -->
+                            </thead>
+                            <tbody id="attendanceBody">
+                                <tr><td colspan="32" class="text-center py-8 text-gray-500">اختر الشهر لعرض تقرير الحضور</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -356,6 +470,52 @@
         </div>
     </div>
 
+    <!-- BULK IMPORT MODAL -->
+    <div id="bulkImportModal" class="modal fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="text-lg font-bold">📤 استيراد سائقين من CSV</h3>
+                <button onclick="closeModal('bulkImportModal')" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                    <p class="font-semibold text-blue-800 mb-2">تنسيق الملف المطلوب:</p>
+                    <p class="text-blue-700">يجب أن يحتوي ملف CSV على الأعمدة التالية:</p>
+                    <code class="block bg-white p-2 rounded mt-2 text-xs">
+                        full_name,email,driver_code,phone,driver_type,license_expiry
+                    </code>
+                    <p class="text-blue-600 text-xs mt-2">* driver_type: permanent أو temporary</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">اختر ملف CSV</label>
+                    <input type="file" id="csvFileInput" accept=".csv" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div id="csvPreview" class="hidden">
+                    <p class="text-sm font-semibold mb-2">معاينة البيانات:</p>
+                    <div id="csvPreviewContent" class="max-h-48 overflow-auto border rounded-lg text-xs"></div>
+                </div>
+                <div id="importProgress" class="hidden">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                        <span class="text-sm">جاري الاستيراد...</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="importProgressBar" class="bg-blue-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="importStatus" class="text-xs text-gray-500 mt-1"></p>
+                </div>
+                <div id="importResult" class="hidden p-3 rounded-lg text-sm"></div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModal('bulkImportModal')" class="flex-1 px-4 py-2 border rounded-lg">إلغاء</button>
+                    <button type="button" onclick="processBulkImport()" id="importBtn" class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">استيراد</button>
+                </div>
+                <div class="text-center">
+                    <button onclick="downloadSampleCSV()" class="text-sm text-blue-600 hover:underline">تحميل نموذج CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
@@ -450,7 +610,7 @@
 
             let query = mySupabase
                 .from('drivers')
-                .select('*, driver_vehicle_assignments(vehicles(van_code, plate_number))')
+                .select('*')
                 .neq('role', 'admin')
                 .order('full_name');
 
@@ -530,7 +690,7 @@
 
             let query = mySupabase
                 .from('vehicles')
-                .select('*, driver_vehicle_assignments(drivers(full_name, driver_code))')
+                .select('*')
                 .order('van_code');
 
             if (filter !== 'all') query = query.eq('status', filter);
@@ -593,22 +753,72 @@
         }
 
         // ========================================
+        // DATE RANGE HELPER
+        // ========================================
+        function getDateRange(rangeValue) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let startDate, endDate;
+
+            switch (rangeValue) {
+                case 'today':
+                    startDate = new Date(today);
+                    endDate = new Date(today);
+                    endDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'yesterday':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 1);
+                    endDate = new Date(startDate);
+                    endDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'last7':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 6);
+                    endDate = new Date(today);
+                    endDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'last30':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 29);
+                    endDate = new Date(today);
+                    endDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'thisMonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = new Date(today);
+                    endDate.setHours(23, 59, 59, 999);
+                    break;
+                case 'lastMonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    endDate.setHours(23, 59, 59, 999);
+                    break;
+                default:
+                    startDate = new Date(today);
+                    endDate = new Date(today);
+                    endDate.setHours(23, 59, 59, 999);
+            }
+
+            return {
+                start: startDate.toISOString(),
+                end: endDate.toISOString()
+            };
+        }
+
+        // ========================================
         // INSPECTIONS
         // ========================================
         async function loadInspections() {
-            const date = document.getElementById('inspectionDate').value;
+            const rangeValue = document.getElementById('inspectionDateRange').value;
             const type = document.getElementById('inspectionType').value;
-
-            if (!date) {
-                document.getElementById('inspectionsList').innerHTML = '<p class="text-gray-500 text-center py-8">اختر تاريخ للبحث</p>';
-                return;
-            }
+            const { start, end } = getDateRange(rangeValue);
 
             let query = mySupabase
                 .from('inspections')
                 .select('*, drivers(full_name, driver_code), vehicles(van_code, plate_number)')
-                .gte('submitted_at', date + 'T00:00:00')
-                .lte('submitted_at', date + 'T23:59:59')
+                .gte('submitted_at', start)
+                .lte('submitted_at', end)
                 .order('submitted_at', { ascending: false });
 
             if (type !== 'all') query = query.eq('inspection_type', type);
@@ -644,30 +854,31 @@
         async function showInspectionDetail(id) {
             const { data: i } = await mySupabase
                 .from('inspections')
-                .select('*, drivers(full_name), vehicles(van_code, plate_number)')
+                .select('*, drivers(full_name, driver_code), vehicles(van_code, plate_number)')
                 .eq('id', id)
                 .single();
 
             if (!i) return;
 
             const typeLabel = i.inspection_type === 'receive' ? 'استلام' : 'تسليم';
-            const photos = [i.photo_front, i.photo_back, i.photo_right, i.photo_left, i.photo_dashboard].filter(p => p);
+            const photos = [i.photo_front, i.photo_back, i.photo_right, i.photo_left, i.photo_dashboard, i.photo_notes].filter(p => p);
 
             document.getElementById('detailTitle').textContent = 'تفاصيل الفحص - ' + i.inspection_code;
             document.getElementById('detailContent').innerHTML = `
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><strong>السائق:</strong> ${i.drivers?.full_name}</div>
+                        <div><strong>السائق:</strong> ${i.drivers?.full_name} (${i.drivers?.driver_code || '-'})</div>
                         <div><strong>المركبة:</strong> ${i.vehicles?.van_code}</div>
                         <div><strong>النوع:</strong> ${typeLabel}</div>
                         <div><strong>التاريخ:</strong> ${new Date(i.submitted_at).toLocaleString('ar-SA')}</div>
+                        <div class="col-span-2 p-2 bg-blue-50 rounded"><strong>العداد:</strong> <span class="text-lg font-bold text-blue-700">${i.odometer_reading ? i.odometer_reading.toLocaleString() + ' كم' : '-'}</span></div>
                         <div><strong>الأنوار الأمامية:</strong> ${i.light_front ? '✅' : '❌'}</div>
                         <div><strong>الأنوار الخلفية:</strong> ${i.light_back ? '✅' : '❌'}</div>
                         <div><strong>إشارة اليمين:</strong> ${i.signal_right ? '✅' : '❌'}</div>
                         <div><strong>إشارة اليسار:</strong> ${i.signal_left ? '✅' : '❌'}</div>
-                        <div><strong>الثلاجة:</strong> ${i.fridge_status || '-'}</div>
+                        <div><strong>الثلاجة:</strong> ${i.fridge_status === 'working' ? '✅ تعمل' : '❌ لا تعمل'}</div>
                     </div>
-                    ${i.notes ? `<div class="p-3 bg-gray-50 rounded"><strong>ملاحظات:</strong> ${i.notes}</div>` : ''}
+                    ${i.notes ? `<div class="p-3 bg-yellow-50 rounded"><strong>ملاحظات:</strong> ${i.notes}</div>` : ''}
                     <div>
                         <strong>الصور:</strong>
                         <div class="grid grid-cols-3 gap-2 mt-2">
@@ -747,7 +958,12 @@
             if (!m) return;
 
             const photos = [m.photo_1, m.photo_2, m.photo_3].filter(p => p);
-            const issues = m.issue_types?.join(', ') || '-';
+            const issueLabels = {
+                oil_change: 'تغيير زيت', engine: 'المحرك', brakes: 'الفرامل', tires: 'الإطارات',
+                ac: 'التكييف', lights: 'الأنوار', battery: 'البطارية',
+                fridge: 'الثلاجة', other: 'أخرى'
+            };
+            const issues = m.issue_types?.map(t => issueLabels[t] || t).join(', ') || '-';
 
             document.getElementById('detailTitle').textContent = 'تفاصيل الصيانة - ' + m.report_code;
             document.getElementById('detailContent').innerHTML = `
@@ -795,13 +1011,17 @@
                 return;
             }
 
-            const typeLabels = {
-                collision: 'تصادم', scratch: 'خدش', rollover: 'انقلاب',
-                hit_and_run: 'صدم وهرب', pedestrian: 'دهس', other: 'أخرى'
+            const damageLabels = {
+                front: 'أمامي', back: 'خلفي', right: 'يمين',
+                left: 'يسار', top: 'سقف', multiple: 'متعدد'
             };
 
             document.getElementById('accidentsList').innerHTML = data.map(a => {
                 const statusLabel = { pending: 'معلقة', under_investigation: 'قيد التحقيق', resolved: 'تم الحل', closed: 'مغلقة' }[a.status];
+                const damageText = a.damage_location && a.damage_location.length > 0
+                    ? a.damage_location.map(d => damageLabels[d] || d).join(', ')
+                    : (a.accident_type || '-');
+                const faultPct = a.fault_percentage || 0;
 
                 return `
                     <div class="border rounded-lg p-3 hover:bg-gray-50 border-r-4 border-red-500">
@@ -809,7 +1029,7 @@
                             <div>
                                 <p class="font-semibold">${a.report_code}</p>
                                 <p class="text-xs text-gray-500">${a.drivers?.full_name} | ${a.vehicles?.van_code}</p>
-                                <p class="text-xs text-red-600">${typeLabels[a.accident_type] || a.accident_type}</p>
+                                <p class="text-xs text-red-600">📍 ${damageText} | ⚖️ ${faultPct}%</p>
                             </div>
                             <div class="flex items-center gap-2">
                                 <select onchange="updateAccidentStatus('${a.id}', this.value)" class="text-xs border rounded px-2 py-1">
@@ -836,7 +1056,7 @@
         async function showAccidentDetail(id) {
             const { data: a } = await mySupabase
                 .from('accident_reports')
-                .select('*, drivers(full_name), vehicles(van_code)')
+                .select('*, drivers(full_name, driver_code), vehicles(van_code)')
                 .eq('id', id)
                 .single();
 
@@ -848,14 +1068,37 @@
                 a.taqdir_report ? { name: 'تقرير تقدير', url: a.taqdir_report } : null
             ].filter(d => d);
 
+            // Damage location labels
+            const damageLabels = {
+                front: 'أمامي', back: 'خلفي', right: 'يمين',
+                left: 'يسار', top: 'سقف', multiple: 'متعدد'
+            };
+            const damageText = a.damage_location && a.damage_location.length > 0
+                ? a.damage_location.map(d => damageLabels[d] || d).join(', ')
+                : (a.accident_type || '-');
+
+            // Fault percentage color
+            const faultPct = a.fault_percentage || 0;
+            let faultColor = 'text-green-600';
+            if (faultPct > 75) faultColor = 'text-red-600';
+            else if (faultPct > 50) faultColor = 'text-orange-600';
+            else if (faultPct > 25) faultColor = 'text-yellow-600';
+
             document.getElementById('detailTitle').textContent = 'تفاصيل الحادث - ' + a.report_code;
             document.getElementById('detailContent').innerHTML = `
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><strong>السائق:</strong> ${a.drivers?.full_name}</div>
+                        <div><strong>السائق:</strong> ${a.drivers?.full_name} (${a.drivers?.driver_code || '-'})</div>
                         <div><strong>المركبة:</strong> ${a.vehicles?.van_code}</div>
-                        <div><strong>نوع الحادث:</strong> ${a.accident_type}</div>
+                        <div><strong>مكان الضرر:</strong> ${damageText}</div>
                         <div><strong>الحالة:</strong> ${a.status}</div>
+                        <div class="col-span-2 p-3 bg-red-50 rounded border border-red-200">
+                            <strong>نسبة الخطأ:</strong>
+                            <span class="text-2xl font-bold ${faultColor} mr-2">${faultPct}%</span>
+                            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                                <div class="h-3 rounded-full ${faultPct > 50 ? 'bg-red-500' : 'bg-green-500'}" style="width: ${faultPct}%"></div>
+                            </div>
+                        </div>
                         <div><strong>الموقع:</strong> ${a.accident_location || '-'}</div>
                         <div><strong>التاريخ:</strong> ${new Date(a.submitted_at).toLocaleString('ar-SA')}</div>
                     </div>
@@ -876,6 +1119,164 @@
                         </div>
                     </div>
                     ` : ''}
+                </div>
+            `;
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // ========================================
+        // FOOD BATCHES (Kitchen Workflow)
+        // ========================================
+        async function loadDeliveries() {
+            const rangeValue = document.getElementById('deliveryDateRange').value;
+            const status = document.getElementById('deliveryStatus').value;
+            const { start, end } = getDateRange(rangeValue);
+
+            let query = mySupabase
+                .from('food_batches')
+                .select(`
+                    *,
+                    kitchen_staff:drivers!food_batches_kitchen_staff_id_fkey(full_name),
+                    driver:drivers!food_batches_driver_id_fkey(full_name)
+                `)
+                .gte('created_at', start)
+                .lte('created_at', end)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (status !== 'all') query = query.eq('status', status);
+
+            const { data, error } = await query;
+
+            if (error || !data || data.length === 0) {
+                document.getElementById('deliveriesList').innerHTML = '<p class="text-gray-500 text-center py-8">لا توجد توصيلات</p>';
+                return;
+            }
+
+            const statusLabels = {
+                pending: { text: 'بانتظار السائق', class: 'bg-yellow-100 text-yellow-700' },
+                assigned: { text: 'تم التعيين', class: 'bg-blue-100 text-blue-700' },
+                in_progress: { text: 'قيد التوصيل', class: 'bg-orange-100 text-orange-700' },
+                completed: { text: 'مكتمل', class: 'bg-green-100 text-green-700' },
+                cancelled: { text: 'ملغي', class: 'bg-red-100 text-red-700' }
+            };
+
+            document.getElementById('deliveriesList').innerHTML = data.map(b => {
+                const createdTime = new Date(b.created_at).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+                const statusInfo = statusLabels[b.status] || { text: b.status, class: 'bg-gray-100 text-gray-700' };
+                const progress = Math.round((b.delivered_count / b.meal_count) * 100);
+
+                return `
+                    <div class="border rounded-lg p-3 hover:bg-gray-50 border-r-4 ${b.status === 'completed' ? 'border-green-500' : b.status === 'pending' ? 'border-yellow-500' : 'border-blue-500'}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="font-semibold">${b.client_name}</p>
+                                <p class="text-xs text-gray-500">المطبخ: ${b.kitchen_staff?.full_name || '-'} | السائق: ${b.driver?.full_name || 'غير معين'}</p>
+                                <p class="text-xs text-gray-400">${createdTime} | ${b.batch_code}</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: ${progress}%"></div>
+                                    </div>
+                                    <span class="text-xs font-semibold text-gray-600">${b.delivered_count}/${b.meal_count}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.class}">${statusInfo.text}</span>
+                                <button onclick="showBatchDetail('${b.id}')" class="px-3 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded">عرض</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function showBatchDetail(id) {
+            const { data: b } = await mySupabase
+                .from('food_batches')
+                .select(`
+                    *,
+                    kitchen_staff:drivers!food_batches_kitchen_staff_id_fkey(full_name, driver_code),
+                    driver:drivers!food_batches_driver_id_fkey(full_name, driver_code)
+                `)
+                .eq('id', id)
+                .single();
+
+            if (!b) return;
+
+            // Load meal deliveries
+            const { data: meals } = await mySupabase
+                .from('meal_deliveries')
+                .select('*')
+                .eq('batch_id', id)
+                .order('meal_number');
+
+            const createdTime = new Date(b.created_at).toLocaleString('ar-SA');
+            const assignedTime = b.assigned_at ? new Date(b.assigned_at).toLocaleString('ar-SA') : '-';
+            const completedTime = b.completed_at ? new Date(b.completed_at).toLocaleString('ar-SA') : '-';
+
+            const statusLabels = {
+                pending: 'بانتظار السائق',
+                assigned: 'تم التعيين',
+                in_progress: 'قيد التوصيل',
+                completed: 'مكتمل',
+                cancelled: 'ملغي'
+            };
+
+            let mealsHtml = '';
+            if (meals && meals.length > 0) {
+                mealsHtml = `
+                    <div class="mt-4">
+                        <p class="font-semibold mb-2">الوجبات المسلمة:</p>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            ${meals.map(m => `
+                                <div class="border rounded-lg p-2 bg-green-50">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-semibold text-sm">وجبة ${m.meal_number}</span>
+                                        <span class="text-xs text-gray-500">${new Date(m.delivered_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    ${m.recipient_name ? `<p class="text-xs text-gray-600">${m.recipient_name}</p>` : ''}
+                                    ${m.photo_url ? `<img src="${m.photo_url}" class="w-full h-20 object-cover rounded mt-1 cursor-pointer" onclick="window.open('${m.photo_url}')">` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('detailTitle').textContent = 'تفاصيل الطلب - ' + b.batch_code;
+            document.getElementById('detailContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>العميل:</strong> ${b.client_name}</div>
+                        <div><strong>عدد الوجبات:</strong> ${b.meal_count}</div>
+                        <div><strong>موظف المطبخ:</strong> ${b.kitchen_staff?.full_name || '-'}</div>
+                        <div><strong>السائق:</strong> ${b.driver?.full_name || 'غير معين'}</div>
+                        <div><strong>الحالة:</strong> ${statusLabels[b.status] || b.status}</div>
+                        <div><strong>التسليم:</strong> ${b.delivered_count}/${b.meal_count}</div>
+                        <div><strong>وقت الإنشاء:</strong> ${createdTime}</div>
+                        <div><strong>وقت التعيين:</strong> ${assignedTime}</div>
+                        ${b.status === 'completed' ? `<div class="col-span-2"><strong>وقت الإتمام:</strong> ${completedTime}</div>` : ''}
+                    </div>
+                    ${b.delivery_location ? `<div class="p-3 bg-gray-50 rounded"><strong>موقع التوصيل:</strong> ${b.delivery_location}</div>` : ''}
+                    ${b.notes ? `<div class="p-3 bg-yellow-50 rounded"><strong>ملاحظات:</strong> ${b.notes}</div>` : ''}
+
+                    <!-- Signatures -->
+                    <div class="grid grid-cols-2 gap-4">
+                        ${b.kitchen_signature ? `
+                        <div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <p class="font-semibold text-sm text-orange-700 mb-1">توقيع المطبخ:</p>
+                            <p class="text-sm text-gray-700">✅ ${b.kitchen_signature.includes('SIGNED:') ? b.kitchen_signature.split(':')[1] : 'موقع'}</p>
+                        </div>
+                        ` : ''}
+                        ${b.driver_signature ? `
+                        <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                            <p class="font-semibold text-sm text-green-700 mb-1">توقيع السائق:</p>
+                            <p class="text-sm text-gray-700">✅ ${b.driver_signature.includes('SIGNED:') ? b.driver_signature.split(':')[1] : 'موقع'}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    ${mealsHtml}
                 </div>
             `;
             document.getElementById('detailModal').classList.add('active');
@@ -987,8 +1388,604 @@
 
                 // Load tab data
                 if (this.dataset.tab === 'vehicles') loadVehicles();
+                if (this.dataset.tab === 'inspections') loadInspections();
+                if (this.dataset.tab === 'deliveries') loadDeliveries();
+                if (this.dataset.tab === 'attendance') {
+                    initAttendanceMonthSelector();
+                    loadAttendance();
+                }
             });
         });
+
+        // ========================================
+        // ATTENDANCE
+        // ========================================
+        let attendanceData = {};  // { driverId: { date: 'P'|'A'|'D' } }
+        let customDayOffs = {};   // { 'driverId_date': true }  - admin toggled day offs
+
+        function initAttendanceMonthSelector() {
+            const select = document.getElementById('attendanceMonth');
+            if (select.options.length > 0) return;  // Already initialized
+
+            const now = new Date();
+            const months = [];
+
+            // Generate last 6 payroll cycles
+            for (let i = 0; i < 6; i++) {
+                let year = now.getFullYear();
+                let month = now.getMonth() - i;
+
+                if (month < 0) {
+                    month += 12;
+                    year -= 1;
+                }
+
+                // Payroll cycle: 21st of month to 20th of next month
+                const startDate = new Date(year, month, 21);
+                const endMonth = month + 1 > 11 ? 0 : month + 1;
+                const endYear = month + 1 > 11 ? year + 1 : year;
+                const endDate = new Date(endYear, endMonth, 20);
+
+                const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                                   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+                const label = `${startDate.getDate()} ${monthNames[month]} - ${endDate.getDate()} ${monthNames[endMonth]} ${endYear}`;
+                const value = `${startDate.toISOString().split('T')[0]}_${endDate.toISOString().split('T')[0]}`;
+
+                months.push({ label, value });
+            }
+
+            select.innerHTML = months.map((m, i) =>
+                `<option value="${m.value}" ${i === 0 ? 'selected' : ''}>${m.label}</option>`
+            ).join('');
+        }
+
+        async function loadAttendance() {
+            const select = document.getElementById('attendanceMonth');
+            if (!select.value) {
+                initAttendanceMonthSelector();
+            }
+
+            const [startDate, endDate] = select.value.split('_');
+
+            // Load drivers
+            const { data: drivers } = await mySupabase
+                .from('drivers')
+                .select('id, full_name, driver_code')
+                .neq('role', 'admin')
+                .eq('is_active', true)
+                .order('full_name');
+
+            if (!drivers || drivers.length === 0) {
+                document.getElementById('attendanceBody').innerHTML =
+                    '<tr><td colspan="32" class="text-center py-8 text-gray-500">لا يوجد سائقين</td></tr>';
+                return;
+            }
+
+            // Load daily reports for the period
+            const { data: reports } = await mySupabase
+                .from('daily_reports')
+                .select('driver_id, report_date')
+                .gte('report_date', startDate)
+                .lte('report_date', endDate);
+
+            // Build a set of driver-date pairs that have reports
+            const reportSet = new Set();
+            if (reports) {
+                reports.forEach(r => {
+                    reportSet.add(`${r.driver_id}_${r.report_date}`);
+                });
+            }
+
+            // Generate all dates in range
+            const dates = [];
+            let current = new Date(startDate);
+            const end = new Date(endDate);
+            while (current <= end) {
+                dates.push(new Date(current));
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Build attendance data
+            attendanceData = {};
+            drivers.forEach(driver => {
+                attendanceData[driver.id] = {};
+                dates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const key = `${driver.id}_${dateStr}`;
+                    const isFriday = date.getDay() === 5;
+                    const hasReport = reportSet.has(key);
+                    const isCustomDayOff = customDayOffs[key];
+
+                    if (isCustomDayOff || (isFriday && !customDayOffs[key + '_removed'])) {
+                        attendanceData[driver.id][dateStr] = 'D';
+                    } else if (hasReport) {
+                        attendanceData[driver.id][dateStr] = 'P';
+                    } else {
+                        // Only mark as absent if date is in the past
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        if (date < today) {
+                            attendanceData[driver.id][dateStr] = 'A';
+                        } else {
+                            attendanceData[driver.id][dateStr] = '-';
+                        }
+                    }
+                });
+            });
+
+            // Render header
+            const headerHtml = `
+                <tr class="bg-gray-100">
+                    <th class="border p-2 sticky right-0 bg-gray-100 z-10 min-w-[150px]">السائق</th>
+                    ${dates.map(d => {
+                        const day = d.getDate();
+                        const dayName = ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'][d.getDay()];
+                        const isFriday = d.getDay() === 5;
+                        return `<th class="border p-1 text-center ${isFriday ? 'bg-blue-50' : ''}" style="min-width:35px">
+                            <div class="text-xs">${dayName}</div>
+                            <div class="font-bold">${day}</div>
+                        </th>`;
+                    }).join('')}
+                    <th class="border p-2 bg-green-50">P</th>
+                    <th class="border p-2 bg-red-50">A</th>
+                    <th class="border p-2 bg-blue-50">D</th>
+                </tr>
+            `;
+            document.getElementById('attendanceHeader').innerHTML = headerHtml;
+
+            // Render body
+            const bodyHtml = drivers.map(driver => {
+                let pCount = 0, aCount = 0, dCount = 0;
+
+                const cells = dates.map(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const status = attendanceData[driver.id][dateStr];
+                    const isFriday = date.getDay() === 5;
+
+                    if (status === 'P') pCount++;
+                    else if (status === 'A') aCount++;
+                    else if (status === 'D') dCount++;
+
+                    let cellClass = '';
+                    let cellText = status;
+
+                    if (status === 'P') {
+                        cellClass = 'bg-green-100 text-green-700 font-bold';
+                    } else if (status === 'A') {
+                        cellClass = 'bg-red-100 text-red-700 font-bold';
+                    } else if (status === 'D') {
+                        cellClass = 'bg-blue-100 text-blue-700 font-bold cursor-pointer hover:bg-blue-200';
+                    } else {
+                        cellClass = 'text-gray-300';
+                    }
+
+                    // Allow clicking to toggle day off
+                    const onclick = status !== '-' ? `onclick="toggleDayOff('${driver.id}', '${dateStr}')"` : '';
+
+                    return `<td class="border p-1 text-center ${cellClass}" ${onclick}>${cellText}</td>`;
+                }).join('');
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="border p-2 sticky right-0 bg-white z-10 font-semibold">
+                            <div>${driver.full_name}</div>
+                            <div class="text-xs text-gray-400">${driver.driver_code}</div>
+                        </td>
+                        ${cells}
+                        <td class="border p-2 text-center font-bold text-green-700 bg-green-50">${pCount}</td>
+                        <td class="border p-2 text-center font-bold text-red-700 bg-red-50">${aCount}</td>
+                        <td class="border p-2 text-center font-bold text-blue-700 bg-blue-50">${dCount}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('attendanceBody').innerHTML = bodyHtml;
+
+            // Update stats
+            let totalP = 0, totalA = 0, totalD = 0;
+            Object.values(attendanceData).forEach(driverData => {
+                Object.values(driverData).forEach(status => {
+                    if (status === 'P') totalP++;
+                    else if (status === 'A') totalA++;
+                    else if (status === 'D') totalD++;
+                });
+            });
+
+            document.getElementById('attendanceStats').innerHTML = `
+                <div class="bg-white rounded-lg p-3 border">
+                    <p class="text-2xl font-bold text-gray-900">${drivers.length}</p>
+                    <p class="text-xs text-gray-500">عدد السائقين</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                    <p class="text-2xl font-bold text-green-700">${totalP}</p>
+                    <p class="text-xs text-green-600">أيام الحضور</p>
+                </div>
+                <div class="bg-red-50 rounded-lg p-3 border border-red-200">
+                    <p class="text-2xl font-bold text-red-700">${totalA}</p>
+                    <p class="text-xs text-red-600">أيام الغياب</p>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <p class="text-2xl font-bold text-blue-700">${totalD}</p>
+                    <p class="text-xs text-blue-600">أيام الإجازة</p>
+                </div>
+            `;
+        }
+
+        function toggleDayOff(driverId, dateStr) {
+            const key = `${driverId}_${dateStr}`;
+            const currentStatus = attendanceData[driverId][dateStr];
+
+            if (currentStatus === 'D') {
+                // Remove day off - mark as absent or present based on report
+                delete customDayOffs[key];
+                customDayOffs[key + '_removed'] = true;
+            } else if (currentStatus === 'A') {
+                // Mark as day off
+                customDayOffs[key] = true;
+                delete customDayOffs[key + '_removed'];
+            } else if (currentStatus === 'P') {
+                // Can't change present to day off
+                alert('لا يمكن تغيير يوم حضور إلى إجازة');
+                return;
+            }
+
+            // Reload to refresh display
+            loadAttendance();
+        }
+
+        function exportAttendanceCSV() {
+            const select = document.getElementById('attendanceMonth');
+            const [startDate, endDate] = select.value.split('_');
+
+            // Generate dates
+            const dates = [];
+            let current = new Date(startDate);
+            const end = new Date(endDate);
+            while (current <= end) {
+                dates.push(new Date(current));
+                current.setDate(current.getDate() + 1);
+            }
+
+            // Build CSV
+            let csv = 'السائق,الكود';
+            dates.forEach(d => {
+                csv += ',' + d.getDate();
+            });
+            csv += ',P,A,D\n';
+
+            // Get driver names from the table
+            const rows = document.querySelectorAll('#attendanceBody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 0) {
+                    const nameCell = cells[0];
+                    const name = nameCell.querySelector('div')?.textContent || '';
+                    const code = nameCell.querySelectorAll('div')[1]?.textContent || '';
+
+                    csv += `"${name}","${code}"`;
+
+                    // Status cells
+                    for (let i = 1; i < cells.length; i++) {
+                        csv += ',' + cells[i].textContent.trim();
+                    }
+                    csv += '\n';
+                }
+            });
+
+            // Download
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `attendance_${startDate}_${endDate}.csv`;
+            link.click();
+        }
+
+        // ========================================
+        // CSV EXPORT/IMPORT FUNCTIONS
+        // ========================================
+        let parsedCSVData = [];
+
+        // Export drivers to CSV
+        async function exportDriversCSV() {
+            const { data: drivers } = await mySupabase
+                .from('drivers')
+                .select('full_name, email, driver_code, phone, driver_type, license_expiry, is_active, created_at')
+                .neq('role', 'admin')
+                .order('full_name');
+
+            if (!drivers || drivers.length === 0) {
+                alert('لا يوجد سائقين للتصدير');
+                return;
+            }
+
+            let csv = 'الاسم,البريد الإلكتروني,كود السائق,الجوال,النوع,انتهاء الرخصة,الحالة,تاريخ الإضافة\n';
+            drivers.forEach(d => {
+                csv += `"${d.full_name}","${d.email}","${d.driver_code}","${d.phone || ''}","${d.driver_type || 'permanent'}","${d.license_expiry || ''}","${d.is_active ? 'نشط' : 'غير نشط'}","${d.created_at?.split('T')[0] || ''}"\n`;
+            });
+
+            downloadCSV(csv, 'drivers_export.csv');
+        }
+
+        // Export vehicles to CSV
+        async function exportVehiclesCSV() {
+            const { data: vehicles } = await mySupabase
+                .from('vehicles')
+                .select('van_code, plate_number, status, location, registration_expiry, insurance_expiry, created_at')
+                .order('van_code');
+
+            if (!vehicles || vehicles.length === 0) {
+                alert('لا توجد مركبات للتصدير');
+                return;
+            }
+
+            let csv = 'كود المركبة,رقم اللوحة,الحالة,الموقع,انتهاء التسجيل,انتهاء التأمين,تاريخ الإضافة\n';
+            vehicles.forEach(v => {
+                const statusAr = { active: 'نشط', idle: 'متوقف', accident: 'حادث', maintenance: 'صيانة' }[v.status] || v.status;
+                csv += `"${v.van_code}","${v.plate_number}","${statusAr}","${v.location || ''}","${v.registration_expiry || ''}","${v.insurance_expiry || ''}","${v.created_at?.split('T')[0] || ''}"\n`;
+            });
+
+            downloadCSV(csv, 'vehicles_export.csv');
+        }
+
+        // Export maintenance to CSV
+        async function exportMaintenanceCSV() {
+            const { data } = await mySupabase
+                .from('maintenance_reports')
+                .select('report_code, drivers(full_name), vehicles(van_code), description, urgency, status, submitted_at')
+                .order('submitted_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+                alert('لا توجد تقارير صيانة للتصدير');
+                return;
+            }
+
+            let csv = 'كود التقرير,السائق,المركبة,الوصف,الأولوية,الحالة,التاريخ\n';
+            data.forEach(m => {
+                const urgencyAr = { high: 'عالية', medium: 'متوسطة', low: 'منخفضة' }[m.urgency] || m.urgency;
+                const statusAr = { pending: 'معلقة', in_progress: 'قيد التنفيذ', completed: 'مكتملة' }[m.status] || m.status;
+                csv += `"${m.report_code}","${m.drivers?.full_name || ''}","${m.vehicles?.van_code || ''}","${(m.description || '').replace(/"/g, '""')}","${urgencyAr}","${statusAr}","${m.submitted_at?.split('T')[0] || ''}"\n`;
+            });
+
+            downloadCSV(csv, 'maintenance_export.csv');
+        }
+
+        // Export accidents to CSV
+        async function exportAccidentsCSV() {
+            const { data } = await mySupabase
+                .from('accident_reports')
+                .select('report_code, drivers(full_name), vehicles(van_code), description, fault_percentage, status, accident_location, submitted_at')
+                .order('submitted_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+                alert('لا توجد تقارير حوادث للتصدير');
+                return;
+            }
+
+            let csv = 'كود التقرير,السائق,المركبة,الوصف,نسبة الخطأ,الحالة,الموقع,التاريخ\n';
+            data.forEach(a => {
+                const statusAr = { pending: 'معلقة', under_investigation: 'قيد التحقيق', resolved: 'تم الحل', closed: 'مغلقة' }[a.status] || a.status;
+                csv += `"${a.report_code}","${a.drivers?.full_name || ''}","${a.vehicles?.van_code || ''}","${(a.description || '').replace(/"/g, '""')}","${a.fault_percentage || 0}%","${statusAr}","${a.accident_location || ''}","${a.submitted_at?.split('T')[0] || ''}"\n`;
+            });
+
+            downloadCSV(csv, 'accidents_export.csv');
+        }
+
+        // Export deliveries to CSV
+        async function exportDeliveriesCSV() {
+            const { data } = await mySupabase
+                .from('food_batches')
+                .select(`
+                    batch_code, client_name, meal_count, delivered_count, status, delivery_location,
+                    kitchen_staff:drivers!food_batches_kitchen_staff_id_fkey(full_name),
+                    driver:drivers!food_batches_driver_id_fkey(full_name),
+                    created_at, completed_at
+                `)
+                .order('created_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+                alert('لا توجد توصيلات للتصدير');
+                return;
+            }
+
+            let csv = 'كود الطلب,العميل,عدد الوجبات,تم التسليم,الحالة,موظف المطبخ,السائق,موقع التوصيل,تاريخ الإنشاء,تاريخ الإتمام\n';
+            data.forEach(d => {
+                const statusAr = { pending: 'بانتظار', assigned: 'تم التعيين', in_progress: 'قيد التوصيل', completed: 'مكتمل', cancelled: 'ملغي' }[d.status] || d.status;
+                csv += `"${d.batch_code}","${d.client_name}","${d.meal_count}","${d.delivered_count}","${statusAr}","${d.kitchen_staff?.full_name || ''}","${d.driver?.full_name || ''}","${d.delivery_location || ''}","${d.created_at?.split('T')[0] || ''}","${d.completed_at?.split('T')[0] || ''}"\n`;
+            });
+
+            downloadCSV(csv, 'deliveries_export.csv');
+        }
+
+        // Helper function to download CSV
+        function downloadCSV(csv, filename) {
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        // Show bulk import modal
+        function showBulkImportModal() {
+            document.getElementById('bulkImportModal').classList.add('active');
+            document.getElementById('csvFileInput').value = '';
+            document.getElementById('csvPreview').classList.add('hidden');
+            document.getElementById('importProgress').classList.add('hidden');
+            document.getElementById('importResult').classList.add('hidden');
+            document.getElementById('importBtn').disabled = false;
+            parsedCSVData = [];
+        }
+
+        // Handle CSV file selection
+        document.getElementById('csvFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const text = event.target.result;
+                parsedCSVData = parseCSV(text);
+
+                if (parsedCSVData.length === 0) {
+                    alert('الملف فارغ أو غير صالح');
+                    return;
+                }
+
+                // Show preview
+                const previewDiv = document.getElementById('csvPreviewContent');
+                let html = '<table class="w-full border-collapse">';
+                html += '<tr class="bg-gray-100">';
+                const headers = ['الاسم', 'البريد', 'الكود', 'الجوال', 'النوع', 'انتهاء الرخصة'];
+                headers.forEach(h => html += `<th class="border p-1">${h}</th>`);
+                html += '</tr>';
+
+                parsedCSVData.slice(0, 5).forEach(row => {
+                    html += '<tr>';
+                    html += `<td class="border p-1">${row.full_name || ''}</td>`;
+                    html += `<td class="border p-1">${row.email || ''}</td>`;
+                    html += `<td class="border p-1">${row.driver_code || ''}</td>`;
+                    html += `<td class="border p-1">${row.phone || ''}</td>`;
+                    html += `<td class="border p-1">${row.driver_type || ''}</td>`;
+                    html += `<td class="border p-1">${row.license_expiry || ''}</td>`;
+                    html += '</tr>';
+                });
+
+                if (parsedCSVData.length > 5) {
+                    html += `<tr><td colspan="6" class="border p-1 text-center text-gray-500">... و ${parsedCSVData.length - 5} سجل آخر</td></tr>`;
+                }
+                html += '</table>';
+                html += `<p class="mt-2 text-green-600 font-semibold">إجمالي: ${parsedCSVData.length} سائق</p>`;
+
+                previewDiv.innerHTML = html;
+                document.getElementById('csvPreview').classList.remove('hidden');
+            };
+            reader.readAsText(file);
+        });
+
+        // Parse CSV text
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            if (lines.length < 2) return [];
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length >= 3) {  // At least name, email, code
+                    const row = {};
+                    headers.forEach((h, idx) => {
+                        row[h] = values[idx]?.trim().replace(/^["']|["']$/g, '') || '';
+                    });
+                    data.push(row);
+                }
+            }
+            return data;
+        }
+
+        // Parse single CSV line (handles quoted values)
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"' && line[i-1] !== '\\') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+
+        // Process bulk import
+        async function processBulkImport() {
+            if (parsedCSVData.length === 0) {
+                alert('الرجاء اختيار ملف CSV أولاً');
+                return;
+            }
+
+            document.getElementById('importBtn').disabled = true;
+            document.getElementById('importProgress').classList.remove('hidden');
+            document.getElementById('importResult').classList.add('hidden');
+
+            let success = 0, failed = 0;
+            const errors = [];
+
+            for (let i = 0; i < parsedCSVData.length; i++) {
+                const row = parsedCSVData[i];
+
+                // Update progress
+                const progress = Math.round(((i + 1) / parsedCSVData.length) * 100);
+                document.getElementById('importProgressBar').style.width = progress + '%';
+                document.getElementById('importStatus').textContent = `جاري معالجة ${i + 1} من ${parsedCSVData.length}...`;
+
+                // Validate required fields
+                if (!row.full_name || !row.email || !row.driver_code) {
+                    failed++;
+                    errors.push(`صف ${i + 2}: بيانات ناقصة`);
+                    continue;
+                }
+
+                // Prepare data
+                const driverData = {
+                    full_name: row.full_name,
+                    email: row.email,
+                    driver_code: row.driver_code,
+                    phone: row.phone || null,
+                    driver_type: row.driver_type === 'temporary' ? 'temporary' : 'permanent',
+                    license_expiry: row.license_expiry || null,
+                    is_active: true,
+                    role: 'driver'
+                };
+
+                // Insert
+                const { error } = await mySupabase.from('drivers').insert([driverData]);
+                if (error) {
+                    failed++;
+                    errors.push(`${row.driver_code}: ${error.message}`);
+                } else {
+                    success++;
+                }
+            }
+
+            // Show result
+            document.getElementById('importProgress').classList.add('hidden');
+            const resultDiv = document.getElementById('importResult');
+            resultDiv.classList.remove('hidden');
+
+            if (failed === 0) {
+                resultDiv.className = 'p-3 rounded-lg text-sm bg-green-100 text-green-700';
+                resultDiv.innerHTML = `✅ تم استيراد ${success} سائق بنجاح!`;
+            } else {
+                resultDiv.className = 'p-3 rounded-lg text-sm bg-yellow-100 text-yellow-700';
+                resultDiv.innerHTML = `
+                    <p>✅ نجح: ${success} | ❌ فشل: ${failed}</p>
+                    ${errors.length > 0 ? `<p class="mt-2 text-xs text-red-600">${errors.slice(0, 3).join('<br>')}</p>` : ''}
+                `;
+            }
+
+            document.getElementById('importBtn').disabled = false;
+            await logAction('bulk_import_drivers', 'driver', null, { success, failed });
+            loadDrivers();
+            loadStats();
+        }
+
+        // Download sample CSV
+        function downloadSampleCSV() {
+            const sample = `full_name,email,driver_code,phone,driver_type,license_expiry
+محمد أحمد,mohamed@example.com,DRV-101,0551234567,permanent,2025-12-31
+علي محمد,ali@example.com,DRV-102,0559876543,temporary,2025-06-30
+خالد عبدالله,khaled@example.com,DRV-103,0551112233,permanent,`;
+            downloadCSV(sample, 'drivers_sample.csv');
+        }
 
         // ========================================
         // SEARCH HANDLERS

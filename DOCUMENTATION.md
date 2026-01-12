@@ -26,6 +26,7 @@ FleetCheck is a fleet management system designed for Antifat's 80 van drivers in
 - Report maintenance issues
 - Report accidents with photo evidence
 - Upload official documents (Najm/Taqdir reports)
+- Track food deliveries with pickup/delivery photos
 
 Administrators can:
 - View all reports with filters

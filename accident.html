@@ -25,6 +25,16 @@
         }
         .doc-upload:hover { border-color: #4f46e5; background-color: #eef2ff; }
         .doc-upload.has-file { border-style: solid; border-color: #10b981; border-width: 3px; background-color: #ecfdf5; }
+        .license-upload {
+            border: 3px dashed #8b5cf6;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            min-height: 120px;
+            transition: all 0.2s;
+        }
+        .license-upload:hover { border-color: #7c3aed; background-color: #f3e8ff; }
+        .license-upload.has-image { border-style: solid; border-color: #10b981; border-width: 3px; }
         input[type="file"] { display: none; }
         .accident-option {
             cursor: pointer;
@@ -82,8 +92,16 @@
             </div>
 
             <div id="driverSection" class="p-4 bg-blue-50 rounded-lg">
-                <p class="text-sm text-gray-600">السائق:</p>
-                <p id="driverName" class="font-bold text-lg">جاري التحميل...</p>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-600">السائق:</p>
+                        <p id="driverName" class="font-bold text-lg">جاري التحميل...</p>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs text-gray-500">رقم الكابتن</p>
+                        <p id="driverCode" class="font-bold text-lg text-blue-700 bg-white px-3 py-1 rounded-lg border">---</p>
+                    </div>
+                </div>
             </div>
 
             <div id="vehicleSection" class="p-4 bg-green-50 rounded-lg">
@@ -91,58 +109,115 @@
                 <p id="vehicleName" class="font-bold text-lg">جاري التحميل...</p>
             </div>
 
-            <!-- ACCIDENT TYPE SELECTION -->
+            <!-- LICENSE PHOTO -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-purple-800 mb-2">🪪 صورة رخصة القيادة *</label>
+                <p class="text-sm text-purple-600 mb-3">التقط صورة واضحة لرخصة القيادة الخاصة بك</p>
+                <div class="license-upload rounded-xl flex flex-col items-center justify-center p-6 border-3 border-dashed border-purple-400 bg-purple-50 cursor-pointer hover:bg-purple-100 transition-all" onclick="document.getElementById('licensePhoto').click()">
+                    <input type="file" id="licensePhoto" accept="image/*" capture="environment" onchange="handleLicensePhoto(this)" class="hidden">
+                    <span class="text-4xl mb-2">🪪</span>
+                    <span id="licenseLabel" class="text-sm font-bold text-purple-700">اضغط لالتقاط صورة الرخصة</span>
+                </div>
+            </div>
+
+            <!-- DAMAGE LOCATION SELECTION -->
             <div>
-                <label class="block text-lg font-bold text-gray-700 mb-3">🚗 نوع الحادث *</label>
-                <div class="grid grid-cols-2 gap-3">
+                <label class="block text-lg font-bold text-gray-700 mb-3">🚗 مكان الضرر *</label>
+                <p class="text-sm text-gray-500 mb-3">حدد موقع الضرر في المركبة (يمكن اختيار أكثر من موقع)</p>
+                <div class="grid grid-cols-3 gap-3">
                     <label class="accident-option">
-                        <input type="radio" name="accidentType" value="collision" class="hidden" required>
-                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
-                            <span class="text-3xl block mb-1">💥</span>
-                            <span class="font-semibold text-sm">تصادم</span>
-                            <span class="text-xs text-gray-500 block">Collision</span>
+                        <input type="checkbox" name="damageLocation" value="front" class="hidden">
+                        <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <svg width="50" height="35" viewBox="0 0 50 35" class="mx-auto mb-1">
+                                <rect x="5" y="10" width="40" height="20" rx="4" fill="#4b5563" stroke="#374151" stroke-width="2"/>
+                                <rect x="12" y="5" width="26" height="8" rx="2" fill="#93c5fd" stroke="#374151"/>
+                                <circle cx="12" cy="20" r="4" fill="#fbbf24"/>
+                                <circle cx="38" cy="20" r="4" fill="#fbbf24"/>
+                            </svg>
+                            <span class="font-semibold text-xs block">أمامي</span>
+                            <span class="text-xs text-gray-500">Front</span>
                         </div>
                     </label>
                     <label class="accident-option">
-                        <input type="radio" name="accidentType" value="scratch" class="hidden">
-                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
-                            <span class="text-3xl block mb-1">🔧</span>
-                            <span class="font-semibold text-sm">خدش/صدمة</span>
-                            <span class="text-xs text-gray-500 block">Scratch/Dent</span>
+                        <input type="checkbox" name="damageLocation" value="back" class="hidden">
+                        <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <svg width="50" height="35" viewBox="0 0 50 35" class="mx-auto mb-1">
+                                <rect x="5" y="10" width="40" height="20" rx="4" fill="#4b5563" stroke="#374151" stroke-width="2"/>
+                                <rect x="12" y="5" width="26" height="8" rx="2" fill="#93c5fd" stroke="#374151"/>
+                                <circle cx="12" cy="20" r="4" fill="#ef4444"/>
+                                <circle cx="38" cy="20" r="4" fill="#ef4444"/>
+                            </svg>
+                            <span class="font-semibold text-xs block">خلفي</span>
+                            <span class="text-xs text-gray-500">Back</span>
                         </div>
                     </label>
                     <label class="accident-option">
-                        <input type="radio" name="accidentType" value="rollover" class="hidden">
-                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
-                            <span class="text-3xl block mb-1">🔄</span>
-                            <span class="font-semibold text-sm">انقلاب</span>
-                            <span class="text-xs text-gray-500 block">Rollover</span>
+                        <input type="checkbox" name="damageLocation" value="right" class="hidden">
+                        <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <svg width="50" height="35" viewBox="0 0 50 35" class="mx-auto mb-1">
+                                <path d="M5 25 L5 18 L12 18 L15 10 L35 10 L38 18 L45 18 L45 25 Z" fill="#4b5563" stroke="#374151" stroke-width="2"/>
+                                <path d="M16 12 L18 18 L32 18 L34 12 Z" fill="#93c5fd" stroke="#374151"/>
+                                <circle cx="14" cy="27" r="4" fill="#1f2937"/>
+                                <circle cx="36" cy="27" r="4" fill="#1f2937"/>
+                            </svg>
+                            <span class="font-semibold text-xs block">يمين</span>
+                            <span class="text-xs text-gray-500">Right</span>
                         </div>
                     </label>
                     <label class="accident-option">
-                        <input type="radio" name="accidentType" value="hit_and_run" class="hidden">
-                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
-                            <span class="text-3xl block mb-1">🏃</span>
-                            <span class="font-semibold text-sm">صدم وهرب</span>
-                            <span class="text-xs text-gray-500 block">Hit & Run</span>
+                        <input type="checkbox" name="damageLocation" value="left" class="hidden">
+                        <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <svg width="50" height="35" viewBox="0 0 50 35" class="mx-auto mb-1">
+                                <path d="M45 25 L45 18 L38 18 L35 10 L15 10 L12 18 L5 18 L5 25 Z" fill="#4b5563" stroke="#374151" stroke-width="2"/>
+                                <path d="M34 12 L32 18 L18 18 L16 12 Z" fill="#93c5fd" stroke="#374151"/>
+                                <circle cx="36" cy="27" r="4" fill="#1f2937"/>
+                                <circle cx="14" cy="27" r="4" fill="#1f2937"/>
+                            </svg>
+                            <span class="font-semibold text-xs block">يسار</span>
+                            <span class="text-xs text-gray-500">Left</span>
                         </div>
                     </label>
                     <label class="accident-option">
-                        <input type="radio" name="accidentType" value="pedestrian" class="hidden">
-                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
-                            <span class="text-3xl block mb-1">🚶</span>
-                            <span class="font-semibold text-sm">دهس</span>
-                            <span class="text-xs text-gray-500 block">Pedestrian</span>
+                        <input type="checkbox" name="damageLocation" value="top" class="hidden">
+                        <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <svg width="50" height="35" viewBox="0 0 50 35" class="mx-auto mb-1">
+                                <rect x="10" y="5" width="30" height="25" rx="3" fill="#4b5563" stroke="#374151" stroke-width="2"/>
+                                <rect x="15" y="10" width="20" height="15" rx="2" fill="#93c5fd"/>
+                            </svg>
+                            <span class="font-semibold text-xs block">سقف</span>
+                            <span class="text-xs text-gray-500">Top/Roof</span>
                         </div>
                     </label>
                     <label class="accident-option">
-                        <input type="radio" name="accidentType" value="other" class="hidden">
-                        <div class="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
-                            <span class="text-3xl block mb-1">⚙️</span>
-                            <span class="font-semibold text-sm">أخرى</span>
-                            <span class="text-xs text-gray-500 block">Other</span>
+                        <input type="checkbox" name="damageLocation" value="multiple" class="hidden">
+                        <div class="p-3 bg-gray-50 rounded-xl border-2 border-gray-200 text-center">
+                            <span class="text-2xl block mb-1">💥</span>
+                            <span class="font-semibold text-xs block">متعدد</span>
+                            <span class="text-xs text-gray-500">Multiple</span>
                         </div>
                     </label>
+                </div>
+            </div>
+
+            <!-- FAULT PERCENTAGE -->
+            <div class="border-t pt-6">
+                <label class="block text-lg font-bold text-gray-700 mb-2">⚖️ نسبة الخطأ *</label>
+                <p class="text-sm text-gray-500 mb-3">حدد نسبة الخطأ على السائق (من تقرير نجم/الشرطة)</p>
+                <div class="bg-gray-50 p-4 rounded-xl">
+                    <div class="flex items-center gap-4">
+                        <input type="range" id="faultPercentage" min="0" max="100" value="0" step="5"
+                               class="flex-grow h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                               oninput="updateFaultDisplay(this.value)">
+                        <div class="text-center min-w-[80px]">
+                            <span id="faultValue" class="text-2xl font-bold text-gray-800">0</span>
+                            <span class="text-lg text-gray-600">%</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>0% - لا خطأ</span>
+                        <span>50%</span>
+                        <span>100% - خطأ كامل</span>
+                    </div>
                 </div>
             </div>
 
@@ -253,6 +328,7 @@
         let currentDriver = null;
         let currentVehicle = null;
         let photos = { 1: null, 2: null, 3: null, 4: null, 5: null };
+        let licensePhoto = null;
         let documents = { najm: null, taqdir: null };
         let currentLocation = null;
 
@@ -293,7 +369,8 @@
 
             if (driver) {
                 currentDriver = driver;
-                document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
+                document.getElementById('driverName').textContent = driver.full_name;
+                document.getElementById('driverCode').textContent = driver.driver_code;
 
                 const { data: assignment } = await mySupabase
                     .from('driver_vehicle_assignments')
@@ -317,6 +394,22 @@
             await mySupabase.auth.signOut();
             window.location.href = 'login.html';
         });
+
+        // Update fault percentage display
+        function updateFaultDisplay(value) {
+            const faultValue = document.getElementById('faultValue');
+            faultValue.textContent = value;
+            // Change color based on value
+            if (value <= 25) {
+                faultValue.className = 'text-2xl font-bold text-green-600';
+            } else if (value <= 50) {
+                faultValue.className = 'text-2xl font-bold text-yellow-600';
+            } else if (value <= 75) {
+                faultValue.className = 'text-2xl font-bold text-orange-600';
+            } else {
+                faultValue.className = 'text-2xl font-bold text-red-600';
+            }
+        }
 
         function handlePhoto(input, num) {
             const file = input.files[0];
@@ -366,6 +459,29 @@
             document.getElementById(labelId).textContent = '✓ ' + fileName;
         }
 
+        function handleLicensePhoto(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!CONFIG.ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+                alert('نوع الملف غير مدعوم. يرجى اختيار صورة JPG أو PNG');
+                input.value = '';
+                return;
+            }
+
+            if (file.size > CONFIG.MAX_FILE_SIZE) {
+                alert('حجم الملف كبير جداً. الحد الأقصى 10 MB');
+                input.value = '';
+                return;
+            }
+
+            licensePhoto = file;
+            const parent = document.querySelector('.license-upload');
+            parent.style.backgroundImage = 'url(' + URL.createObjectURL(file) + ')';
+            parent.classList.add('has-image');
+            document.getElementById('licenseLabel').textContent = '✓ تم التقاط صورة الرخصة';
+        }
+
         async function uploadFile(file, reportCode, folder, name) {
             const fileExt = file.name.split('.').pop().toLowerCase();
             const fileName = `accidents/${reportCode}/${folder}/${name}.${fileExt}`;
@@ -395,10 +511,18 @@
                 return;
             }
 
-            // Validate accident type
-            const accidentType = document.querySelector('input[name="accidentType"]:checked');
-            if (!accidentType) {
-                alert('يرجى اختيار نوع الحادث');
+            // Validate damage location
+            const selectedDamageLocations = document.querySelectorAll('input[name="damageLocation"]:checked');
+            if (selectedDamageLocations.length === 0) {
+                alert('يرجى تحديد مكان الضرر');
+                return;
+            }
+            const damageLocations = Array.from(selectedDamageLocations).map(cb => cb.value);
+            const faultPercentage = parseInt(document.getElementById('faultPercentage').value);
+
+            // Validate license photo
+            if (!licensePhoto) {
+                alert('يرجى التقاط صورة رخصة القيادة');
                 return;
             }
 
@@ -428,7 +552,12 @@
                 let photoUrls = { photo1: null, photo2: null, photo3: null, photo4: null, photo5: null };
                 let uploadCount = 0;
                 let totalUploads = Object.values(photos).filter(p => p).length +
-                                   Object.values(documents).filter(d => d).length;
+                                   Object.values(documents).filter(d => d).length + 1; // +1 for license photo
+
+                // Upload license photo first
+                submitBtn.textContent = 'جاري رفع صورة الرخصة...';
+                const licensePhotoUrl = await uploadFile(licensePhoto, reportCode, 'docs', 'license_photo');
+                uploadCount++;
 
                 for (let i = 1; i <= 5; i++) {
                     if (photos[i]) {
@@ -459,7 +588,9 @@
                     report_code: reportCode,
                     driver_id: currentDriver.id,
                     vehicle_id: currentVehicle.id,
-                    accident_type: accidentType.value,
+                    license_photo: licensePhotoUrl,
+                    damage_location: damageLocations,
+                    fault_percentage: faultPercentage,
                     description: description,
                     accident_location: document.getElementById('accidentLocation').value || null,
                     photo_1: photoUrls.photo1,
@@ -484,9 +615,9 @@
                     .update({ status: 'accident' })
                     .eq('id', currentVehicle.id);
 
-                const accidentLabels = {
-                    collision: 'تصادم', scratch: 'خدش/صدمة', rollover: 'انقلاب',
-                    hit_and_run: 'صدم وهرب', pedestrian: 'دهس', other: 'أخرى'
+                const damageLabels = {
+                    front: 'أمامي', back: 'خلفي', right: 'يمين',
+                    left: 'يسار', top: 'سقف', multiple: 'متعدد'
                 };
 
                 const photoCount = Object.values(photos).filter(p => p).length;
@@ -497,9 +628,11 @@
                         <h3 class="text-xl font-bold mt-2">تم إرسال تقرير الحادث!</h3>
                         <p class="text-sm mt-2">Report Code: <strong>${reportCode}</strong></p>
                         <div class="mt-3 p-3 bg-white rounded-lg text-sm text-right">
-                            <p><strong>السائق:</strong> ${currentDriver.full_name}</p>
+                            <p><strong>السائق:</strong> ${currentDriver.full_name} (${currentDriver.driver_code})</p>
                             <p><strong>المركبة:</strong> ${currentVehicle.van_code}</p>
-                            <p><strong>نوع الحادث:</strong> ${accidentLabels[accidentType.value]}</p>
+                            <p><strong>صورة الرخصة:</strong> ✅ مرفقة</p>
+                            <p><strong>مكان الضرر:</strong> ${damageLocations.map(d => damageLabels[d]).join(', ')}</p>
+                            <p><strong>نسبة الخطأ:</strong> ${faultPercentage}%</p>
                             <p><strong>صور الأضرار:</strong> ${photoCount} صور</p>
                             <p><strong>تقرير نجم/الشرطة:</strong> ${docUrls.najm ? '✅ مرفق' : '❌ غير مرفق'}</p>
                             <p><strong>تقرير تقدير:</strong> ${docUrls.taqdir ? '✅ مرفق' : '❌ غير مرفق'}</p>
@@ -513,6 +646,7 @@
                 // Reset form
                 document.getElementById('accidentForm').reset();
                 photos = { 1: null, 2: null, 3: null, 4: null, 5: null };
+                licensePhoto = null;
                 documents = { najm: null, taqdir: null };
                 document.querySelectorAll('.photo-upload').forEach(el => {
                     el.style.backgroundImage = '';
@@ -521,6 +655,10 @@
                 document.querySelectorAll('.doc-upload').forEach(el => {
                     el.classList.remove('has-file');
                 });
+                // Reset license photo
+                document.querySelector('.license-upload').style.backgroundImage = '';
+                document.querySelector('.license-upload').classList.remove('has-image');
+                document.getElementById('licenseLabel').textContent = 'اضغط لالتقاط صورة الرخصة';
                 document.getElementById('photo1Label').textContent = 'ضرر 1';
                 document.getElementById('photo2Label').textContent = 'ضرر 2';
                 document.getElementById('photo3Label').textContent = 'ضرر 3';
@@ -528,6 +666,9 @@
                 document.getElementById('photo5Label').textContent = 'ضرر 5';
                 document.getElementById('najmLabel').textContent = 'تقرير نجم / الشرطة';
                 document.getElementById('taqdirLabel').textContent = 'تقرير تقدير';
+                document.getElementById('faultPercentage').value = 0;
+                document.getElementById('faultValue').textContent = '0';
+                document.getElementById('faultValue').className = 'text-2xl font-bold text-gray-800';
 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 

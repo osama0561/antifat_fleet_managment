@@ -41,8 +41,21 @@
             </form>
 
             <div class="mt-6 text-center text-sm text-gray-600">
-                <p>للاختبار، استخدم:</p>
-                <p class="font-mono text-xs mt-2 bg-gray-50 p-2 rounded">ahmed@antifat.com / password123</p>
+                <p class="font-semibold mb-2">للاختبار:</p>
+                <div class="space-y-2 text-xs">
+                    <div class="bg-blue-50 p-2 rounded border border-blue-200">
+                        <span class="font-bold text-blue-700">Admin:</span>
+                        <p class="font-mono">okasha@antifat.com / antifat2024</p>
+                    </div>
+                    <div class="bg-orange-50 p-2 rounded border border-orange-200">
+                        <span class="font-bold text-orange-700">Kitchen:</span>
+                        <p class="font-mono">kitchen@antifat.com / antifat2024</p>
+                    </div>
+                    <div class="bg-green-50 p-2 rounded border border-green-200">
+                        <span class="font-bold text-green-700">Driver:</span>
+                        <p class="font-mono">driver@antifat.com / antifat2024</p>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -107,6 +120,8 @@
                 // Redirect based on role
                 if (userData.role === 'admin') {
                     window.location.href = 'admin.html';
+                } else if (userData.role === 'kitchen') {
+                    window.location.href = 'kitchen.html';
                 } else {
                     window.location.href = 'index.html';
                 }
