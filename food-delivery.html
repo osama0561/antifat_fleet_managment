@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FleetCheck - توصيل الطعام</title>
+    <title>FleetCheck - التقرير/التحويلات اليومية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -20,11 +20,11 @@
         <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                    <span class="text-2xl">🍱</span>
+                    <span class="text-2xl">📋</span>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold">توصيل الطعام</h1>
-                    <p class="text-xs text-green-100">Food Delivery</p>
+                    <h1 class="text-lg font-bold">التقرير/التحويلات اليومية</h1>
+                    <p class="text-xs text-green-100">Daily Report / Transfers</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -193,9 +193,6 @@
                                 </th>
                                 <th class="p-1 text-center font-semibold text-purple-700 border border-gray-200 bg-purple-50" style="min-width: 100px;">
                                     <div>البراند</div>
-                                </th>
-                                <th class="p-1 text-center font-semibold text-orange-700 border border-gray-200 bg-orange-50" style="min-width: 50px;">
-                                    <div>العدد</div>
                                 </th>
                                 <th class="p-1 text-center font-semibold text-gray-600 border border-gray-200" style="min-width: 60px;">
                                     <div>المدة</div>
@@ -505,9 +502,6 @@
                         <option value="myhealthy">ماي هيلثي واي</option>
                     </select>
                 </td>
-                <td class="p-1 border border-gray-100 bg-orange-50">
-                    <input type="number" class="quantity w-full px-1 py-1 border border-orange-200 rounded text-center text-xs" min="1" value="" placeholder="العدد">
-                </td>
                 <td class="p-1 border border-gray-100">
                     <select class="duration w-full px-1 py-1 border border-gray-200 rounded text-xs">
                         <option value="permanent">دائم</option>
@@ -570,20 +564,19 @@
                 const locationUrl = row.querySelector('.location-url')?.value || '';
                 const duration = row.querySelector('.duration')?.value || 'permanent';
 
-                // New: single brand selection
+                // Single brand selection
                 const selectedBrand = row.querySelector('.brand-select')?.value || '';
-                const quantity = parseInt(row.querySelector('.quantity')?.value) || 0;
 
-                // Build brands object with only the selected brand
+                // Build brands object with only the selected brand (quantity = 1)
                 const brands = {
-                    mawzon: selectedBrand === 'mawzon' ? quantity : 0,
-                    antifat: selectedBrand === 'antifat' ? quantity : 0,
-                    ck: selectedBrand === 'ck' ? quantity : 0,
-                    routine: selectedBrand === 'routine' ? quantity : 0,
-                    myhealthy: selectedBrand === 'myhealthy' ? quantity : 0
+                    mawzon: selectedBrand === 'mawzon' ? 1 : 0,
+                    antifat: selectedBrand === 'antifat' ? 1 : 0,
+                    ck: selectedBrand === 'ck' ? 1 : 0,
+                    routine: selectedBrand === 'routine' ? 1 : 0,
+                    myhealthy: selectedBrand === 'myhealthy' ? 1 : 0
                 };
 
-                if (quantity > 0 && selectedBrand && captain) {
+                if (selectedBrand && captain) {
                     transfers.push({
                         to_driver_id: captainId,
                         to_driver_name: captain.full_name,
@@ -594,7 +587,6 @@
                         location_url: locationUrl,
                         duration: duration,
                         selected_brand: selectedBrand,
-                        quantity: quantity,
                         brands: brands
                     });
                 }
@@ -607,7 +599,7 @@
             pendingTransfers = collectTransfersFromSheet();
 
             if (pendingTransfers.length === 0) {
-                alert('يرجى إضافة تحويلات صالحة (اختر كابتن، براند، وأدخل العدد)');
+                alert('يرجى إضافة تحويلات صالحة (اختر كابتن واختر البراند)');
                 return;
             }
 
@@ -619,7 +611,6 @@
                         ${t.client_name ? `<p class="text-xs text-gray-600">العميل: ${t.client_name}</p>` : ''}
                         <div class="flex items-center gap-2 mt-2">
                             <span class="inline-block px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold">${BRAND_NAMES[t.selected_brand]}</span>
-                            <span class="inline-block px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-bold">${t.quantity} وجبة</span>
                         </div>
                         ${t.location_url ? `<a href="${t.location_url}" target="_blank" class="text-xs text-blue-600 hover:underline mt-1 inline-block">📍 الموقع</a>` : ''}
                     </div>

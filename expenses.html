@@ -39,7 +39,10 @@
                 </div>
                 <span class="text-lg font-bold text-gray-900">رجوع</span>
             </a>
-            <h1 class="text-lg font-bold text-gray-900">المصروفات</h1>
+            <div class="flex items-center gap-3">
+                <h1 class="text-lg font-bold text-gray-900">المصروفات</h1>
+                <button id="logoutBtn" class="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg">خروج</button>
+            </div>
         </div>
     </header>
 
@@ -151,7 +154,7 @@
                     <option value="">اختر المشرف...</option>
                     <option value="cedarmean">جاسم هشام - جدة</option>
                     <option value="sleiman">سليمان حسين - الرياض</option>
-                    <option value="mohammed">محمد الجامح - JEDDAH</option>
+                    <option value="mohammed">محمد الجامح - جدة</option>
                 </select>
                 <p class="text-xs text-gray-500 mt-1">اختر المشرف الذي دفع لك</p>
             </div>
@@ -437,6 +440,12 @@
         function closeSuccessModal() {
             document.getElementById('successModal').classList.add('hidden');
         }
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await mySupabase.auth.signOut();
+            window.location.href = 'login.html';
+        });
 
         // Initialize on load
         init();

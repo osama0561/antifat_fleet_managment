@@ -116,7 +116,7 @@
                 🚨 الحوادث
             </button>
             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="deliveries">
-                🍱 التوصيلات
+                📋 التحويلات اليومية
             </button>
             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="attendance">
                 📅 الحضور
@@ -194,8 +194,11 @@
         <!-- INSPECTIONS TAB -->
         <div id="inspections-tab" class="tab-content">
             <div class="bg-white rounded-xl shadow-sm">
-                <div class="p-4 border-b">
+                <div class="p-4 border-b flex items-center justify-between">
                     <h2 class="text-lg font-bold">تقارير الفحص (استلام/تسليم)</h2>
+                    <button onclick="exportInspectionsCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                        📥 تصدير CSV
+                    </button>
                 </div>
                 <div class="p-4">
                     <div class="flex flex-wrap gap-3 mb-4">
@@ -282,7 +285,7 @@
         <div id="deliveries-tab" class="tab-content">
             <div class="bg-white rounded-xl shadow-sm">
                 <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
-                    <h2 class="text-lg font-bold">توصيلات الطعام (المطبخ)</h2>
+                    <h2 class="text-lg font-bold">التقرير/التحويلات اليومية</h2>
                     <button onclick="exportDeliveriesCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
                         📥 تصدير CSV
                     </button>
@@ -373,8 +376,31 @@
                     </div>
                 </div>
                 <div class="p-4">
+                    <!-- Company Total Budget (العهدة) -->
+                    <div id="companyBudgetBlock" class="bg-gradient-to-br from-purple-600 to-purple-800 text-white p-6 rounded-xl mb-4 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold mb-1">العهدة الكلية</h3>
+                                <p class="text-purple-200 text-sm">المبلغ المستلم من الشركة</p>
+                            </div>
+                            <button onclick="editCompanyBudget()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="تعديل العهدة">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-4">
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <p class="text-purple-200 text-sm">إجمالي العهدة</p>
+                                <p id="totalBudgetDisplay" class="text-2xl font-bold">0 ر.س</p>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <p class="text-purple-200 text-sm">المتبقي للتوزيع</p>
+                                <p id="remainingBudgetDisplay" class="text-2xl font-bold">0 ر.س</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Supervisor Balances Summary -->
-                    <div id="supervisorBalances" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                    <div id="supervisorBalances" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                         <!-- Will be populated by JS -->
                     </div>
                     <div class="flex flex-wrap gap-3 mb-4">
@@ -501,7 +527,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">الموقع</label>
-                    <input type="text" name="location" class="w-full px-3 py-2 border rounded-lg">
+                    <select name="location" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="">اختر الموقع...</option>
+                        <option value="Jeddah">جدة (Jeddah)</option>
+                        <option value="Riyadh">الرياض (Riyadh)</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">تاريخ انتهاء التسجيل</label>
@@ -1495,34 +1525,68 @@
             alert('تم إضافة السائق بنجاح');
         });
 
+        // Vehicle form handler - v2
         document.getElementById('addVehicleForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('=== ADD VEHICLE v2 ===');
             const form = e.target;
-            const data = {
+
+            // Get raw values first
+            const rawValues = {
                 van_code: form.van_code.value,
                 plate_number: form.plate_number.value,
-                make: form.make.value || null,
-                model: form.model.value || null,
-                rental_company: form.rental_company.value || null,
-                location: form.location.value || null,
-                registration_expiry: form.registration_expiry.value || null,
-                insurance_expiry: form.insurance_expiry.value || null,
-                admin_notes: form.admin_notes.value || null,
+                make: form.make.value,
+                model: form.model.value,
+                rental_company: form.rental_company.value,
+                location: form.location.value,
+                registration_expiry: form.registration_expiry.value,
+                insurance_expiry: form.insurance_expiry.value,
+                admin_notes: form.admin_notes.value
+            };
+            console.log('Raw form values:', rawValues);
+
+            // Build clean data object - only include non-empty values
+            const data = {
+                van_code: rawValues.van_code.trim(),
+                plate_number: rawValues.plate_number.trim(),
                 status: 'idle'
             };
 
-            const { error } = await mySupabase.from('vehicles').insert([data]);
-            if (error) {
-                alert('خطأ: ' + error.message);
+            // Only add optional fields if they have values
+            if (rawValues.make) data.make = rawValues.make;
+            if (rawValues.model) data.model = rawValues.model.trim();
+            if (rawValues.rental_company) data.rental_company = rawValues.rental_company.trim();
+            if (rawValues.location) data.location = rawValues.location;
+            if (rawValues.registration_expiry) data.registration_expiry = rawValues.registration_expiry;
+            if (rawValues.insurance_expiry) data.insurance_expiry = rawValues.insurance_expiry;
+            if (rawValues.admin_notes) data.admin_notes = rawValues.admin_notes.trim();
+
+            console.log('Clean data to insert:', data);
+
+            // Validate required fields
+            if (!data.van_code || !data.plate_number) {
+                alert('يرجى إدخال كود المركبة ورقم اللوحة');
                 return;
             }
 
-            await logAction('add_vehicle', 'vehicle', null, { van_code: data.van_code });
-            closeModal('addVehicleModal');
-            form.reset();
-            loadVehicles();
-            loadStats();
-            alert('تم إضافة المركبة بنجاح');
+            try {
+                const { error } = await mySupabase.from('vehicles').insert([data]);
+                if (error) {
+                    console.error('Insert error:', error);
+                    alert('خطأ: ' + error.message);
+                    return;
+                }
+                console.log('Insert success!');
+                await logAction('add_vehicle', 'vehicle', null, { van_code: data.van_code });
+                closeModal('addVehicleModal');
+                form.reset();
+                loadVehicles();
+                loadStats();
+                alert('تم إضافة المركبة بنجاح');
+            } catch (err) {
+                console.error('Unexpected error:', err);
+                alert('خطأ غير متوقع: ' + err.message);
+            }
         });
 
         // Toggle temp dates visibility
@@ -1886,6 +1950,40 @@
             downloadCSV(csv, 'vehicles_export.csv');
         }
 
+        // Export inspections to CSV
+        async function exportInspectionsCSV() {
+            const rangeValue = document.getElementById('inspectionDateRange').value;
+            const type = document.getElementById('inspectionType').value;
+            const { start, end } = getDateRange(rangeValue);
+
+            let query = mySupabase
+                .from('inspections')
+                .select('inspection_code, inspection_type, submitted_at, odometer_reading, notes, drivers(full_name, driver_code), vehicles(van_code, plate_number)')
+                .gte('submitted_at', start)
+                .lte('submitted_at', end)
+                .order('submitted_at', { ascending: false });
+
+            if (type !== 'all') query = query.eq('inspection_type', type);
+
+            const { data } = await query;
+
+            if (!data || data.length === 0) {
+                alert('لا توجد تقارير فحص للتصدير');
+                return;
+            }
+
+            let csv = 'كود الفحص,النوع,السائق,كود السائق,المركبة,رقم اللوحة,قراءة العداد,الملاحظات,التاريخ,الوقت\n';
+            data.forEach(i => {
+                const typeAr = i.inspection_type === 'receive' ? 'استلام' : 'تسليم';
+                const date = new Date(i.submitted_at);
+                const dateStr = date.toLocaleDateString('en-CA');
+                const timeStr = date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                csv += `"${i.inspection_code || ''}","${typeAr}","${i.drivers?.full_name || ''}","${i.drivers?.driver_code || ''}","${i.vehicles?.van_code || ''}","${i.vehicles?.plate_number || ''}","${i.odometer_reading || ''}","${(i.notes || '').replace(/"/g, '""')}","${dateStr}","${timeStr}"\n`;
+            });
+
+            downloadCSV(csv, 'inspections_export.csv');
+        }
+
         // Export maintenance to CSV
         async function exportMaintenanceCSV() {
             const { data } = await mySupabase
@@ -2149,8 +2247,29 @@
         // EXPENSES / PETTY CASH
         // ========================================
         let supervisorsData = [];
+        let companyBudgetData = null;
+
+        async function loadCompanyBudget() {
+            const { data, error } = await mySupabase
+                .from('company_budget')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error) {
+                console.error('Error loading company budget:', error);
+                return;
+            }
+
+            companyBudgetData = data;
+            document.getElementById('totalBudgetDisplay').textContent = `${Number(data.total_budget).toLocaleString()} ر.س`;
+            document.getElementById('remainingBudgetDisplay').textContent = `${Number(data.remaining_budget).toLocaleString()} ر.س`;
+        }
 
         async function loadSupervisors() {
+            // Load company budget first
+            await loadCompanyBudget();
+
             const { data: supervisors, error } = await mySupabase
                 .from('supervisors')
                 .select('*')
@@ -2164,22 +2283,45 @@
 
             supervisorsData = supervisors || [];
 
-            // Populate supervisor filter dropdown
+            // Calculate and update remaining budget based on supervisors' initial balances
+            if (companyBudgetData) {
+                const totalAssigned = supervisorsData.reduce((sum, s) => sum + Number(s.initial_balance), 0);
+                const calculatedRemaining = Number(companyBudgetData.total_budget) - totalAssigned;
+
+                // Update display with calculated remaining
+                document.getElementById('remainingBudgetDisplay').textContent = `${calculatedRemaining.toLocaleString()} ر.س`;
+
+                // Also update the stored value if different
+                if (calculatedRemaining !== Number(companyBudgetData.remaining_budget)) {
+                    companyBudgetData.remaining_budget = calculatedRemaining;
+                    // Sync to database
+                    mySupabase.from('company_budget').update({ remaining_budget: calculatedRemaining }).eq('id', companyBudgetData.id);
+                }
+            }
+
+            // Populate supervisor filter dropdown with codes
             const filterSelect = document.getElementById('expenseSupervisor');
             filterSelect.innerHTML = '<option value="all">كل المشرفين</option>' +
-                supervisorsData.map(s => `<option value="${s.id}">${s.full_name} (${s.region})</option>`).join('');
+                Object.entries(supervisorCodeMap).map(([code, data]) =>
+                    `<option value="${code}">${data.ar} - ${data.region}</option>`
+                ).join('');
 
             // Render supervisor balance cards
             const balancesHtml = supervisorsData.map(s => `
                 <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                            ${s.full_name.charAt(0)}
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                ${s.full_name.charAt(0)}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">${s.full_name}</p>
+                                <p class="text-xs text-gray-500">${s.region}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-gray-800">${s.full_name}</p>
-                            <p class="text-xs text-gray-500">${s.region}</p>
-                        </div>
+                        <button onclick="editSupervisorBudget('${s.id}')" class="p-2 text-blue-600 hover:bg-blue-200 rounded-lg" title="تعديل الميزانية">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
                     </div>
                     <div class="mt-3 grid grid-cols-2 gap-2 text-center">
                         <div class="bg-white rounded-lg p-2">
@@ -2206,8 +2348,7 @@
                 .from('expenses')
                 .select(`
                     *,
-                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code),
-                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name, region)
+                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code)
                 `)
                 .order('created_at', { ascending: false });
 
@@ -2229,9 +2370,13 @@
                 query = query.eq('status', status);
             }
 
-            // Supervisor filter
+            // Supervisor filter - match by supervisor_id code or supervisor_name
             if (supervisorId !== 'all') {
-                query = query.eq('supervisor_id', supervisorId);
+                const supervisorData = supervisorCodeMap[supervisorId];
+                if (supervisorData) {
+                    // Filter by supervisor_id code OR supervisor_name containing Arabic/English name
+                    query = query.or(`supervisor_id.eq.${supervisorId},supervisor_name.ilike.%${supervisorData.ar}%,supervisor_name.ilike.%${supervisorData.en}%`);
+                }
             }
 
             const { data: expenses, error } = await query;
@@ -2259,7 +2404,11 @@
                 rejected: 'مرفوضة'
             };
 
-            const html = expenses.map(e => `
+            const html = expenses.map(e => {
+                const supervisorDisplay = getSupervisorDisplayName(e);
+                const hasSupervisor = supervisorDisplay || e.supervisor_id || e.supervisor_name;
+
+                return `
                 <div class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1">
@@ -2271,11 +2420,13 @@
                             <p class="text-gray-600 mt-1">${e.description}</p>
                             <div class="flex flex-wrap gap-3 mt-2 text-sm text-gray-500">
                                 <span>👤 ${e.driver?.full_name || 'غير معروف'} (${e.driver?.driver_code || ''})</span>
-                                ${e.supervisor ? `<span>📍 ${e.supervisor.full_name} - ${e.supervisor.region}</span>` : ''}
+                                ${hasSupervisor ? `<span class="text-purple-600 font-medium">📍 ${supervisorDisplay || e.supervisor_name}</span>` : '<span class="text-orange-500 font-medium">⚠️ لم يتم تحديد المشرف</span>'}
+                                ${e.company_paid ? '<span class="text-green-600">✅ دفعت الشركة</span>' : '<span class="text-gray-400">❌ لم تدفع الشركة</span>'}
                             </div>
                         </div>
                         <div class="flex flex-col gap-2">
                             ${e.receipt_photo_url ? `<button onclick="showExpenseDetail('${e.id}')" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm">📷 الإيصال</button>` : ''}
+                            ${e.status === 'pending' ? `<button onclick="assignSupervisorToExpense('${e.id}', ${e.amount})" class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm">📝 ${hasSupervisor ? 'تغيير' : 'تحديد'} المشرف</button>` : ''}
                             ${e.status === 'pending' ? `
                                 <button onclick="updateExpenseStatus('${e.id}', 'approved')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm">✓ موافقة</button>
                                 <button onclick="updateExpenseStatus('${e.id}', 'rejected')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm">✗ رفض</button>
@@ -2283,26 +2434,56 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             document.getElementById('expensesList').innerHTML = html;
         }
 
-        async function updateExpenseStatus(expenseId, newStatus) {
-            const confirmMsg = newStatus === 'approved' ? 'هل تريد الموافقة على هذا المصروف؟' : 'هل تريد رفض هذا المصروف؟';
+        // Map supervisor_id codes from expenses.html to Arabic names and DB names
+        const supervisorCodeMap = {
+            'cedarmean': { ar: 'جاسم هشام', en: 'Jassim Hashem', region: 'جدة' },
+            'sleiman': { ar: 'سليمان حسين', en: 'Sulaiman Hussein', region: 'الرياض' },
+            'mohammed': { ar: 'محمد الجامح', en: 'Mohammed Al-Jameh', region: 'جدة' }
+        };
 
+        // Reverse map: Arabic/English names to codes
+        function getSupervisorCode(name) {
+            if (!name) return null;
+            for (const [code, data] of Object.entries(supervisorCodeMap)) {
+                if (name.includes(data.ar) || name.includes(data.en) ||
+                    data.ar.includes(name) || data.en.toLowerCase().includes(name.toLowerCase())) {
+                    return code;
+                }
+            }
+            return null;
+        }
+
+        // Get Arabic display name from supervisor_id or supervisor_name
+        function getSupervisorDisplayName(expense) {
+            if (expense.supervisor_id && supervisorCodeMap[expense.supervisor_id]) {
+                return supervisorCodeMap[expense.supervisor_id].ar + ' - ' + supervisorCodeMap[expense.supervisor_id].region;
+            }
+            if (expense.supervisor_name) {
+                const code = getSupervisorCode(expense.supervisor_name);
+                if (code) {
+                    return supervisorCodeMap[code].ar + ' - ' + supervisorCodeMap[code].region;
+                }
+                return expense.supervisor_name;
+            }
+            return null;
+        }
+
+        async function updateExpenseStatus(expenseId, newStatus) {
             let rejectionReason = null;
             if (newStatus === 'rejected') {
                 rejectionReason = prompt('سبب الرفض (اختياري):');
-                if (rejectionReason === null) return; // User cancelled
+                if (rejectionReason === null) return;
             }
-
-            if (!confirm(confirmMsg)) return;
 
             // Get expense details first
             const { data: expense } = await mySupabase
                 .from('expenses')
-                .select('*, supervisor:supervisors!expenses_supervisor_id_fkey(*)')
+                .select('*')
                 .eq('id', expenseId)
                 .single();
 
@@ -2311,54 +2492,394 @@
                 return;
             }
 
-            // Update expense status
-            const updateData = {
-                status: newStatus,
-                approved_at: newStatus === 'approved' ? new Date().toISOString() : null
-            };
-            if (rejectionReason) {
-                updateData.rejection_reason = rejectionReason;
+            if (newStatus === 'approved') {
+                // Check if expense has a supervisor assigned
+                let supervisorUUID = null;
+
+                // Try to find supervisor by supervisor_id code
+                if (expense.supervisor_id && supervisorCodeMap[expense.supervisor_id]) {
+                    const mappedData = supervisorCodeMap[expense.supervisor_id];
+                    // Find the supervisor in supervisorsData by English name
+                    const supervisor = supervisorsData.find(s =>
+                        s.full_name.toLowerCase().includes(mappedData.en.split(' ')[0].toLowerCase())
+                    );
+                    if (supervisor) supervisorUUID = supervisor.id;
+                }
+
+                // If not found by code, try by supervisor_name
+                if (!supervisorUUID && expense.supervisor_name) {
+                    // Check against all mappings
+                    for (const [code, data] of Object.entries(supervisorCodeMap)) {
+                        if (expense.supervisor_name.includes(data.ar) || expense.supervisor_name.includes(data.en)) {
+                            const supervisor = supervisorsData.find(s =>
+                                s.full_name.toLowerCase().includes(data.en.split(' ')[0].toLowerCase())
+                            );
+                            if (supervisor) {
+                                supervisorUUID = supervisor.id;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!supervisorUUID) {
+                    // No supervisor found - show selection modal
+                    showSupervisorSelectModal(expenseId, expense.amount);
+                    return;
+                }
+
+                // Proceed with approval and deduction
+                await approveAndDeduct(expenseId, expense.amount, supervisorUUID);
+            } else {
+                // Rejection - just update status
+                const updateData = {
+                    status: newStatus,
+                    rejection_reason: rejectionReason
+                };
+
+                const { error: updateError } = await mySupabase
+                    .from('expenses')
+                    .update(updateData)
+                    .eq('id', expenseId);
+
+                if (updateError) {
+                    alert('خطأ: ' + updateError.message);
+                    return;
+                }
+
+                await logAction('reject_expense', 'expense', expenseId, { amount: expense.amount });
+                alert('تم رفض المصروف');
+                loadSupervisors();
+                loadExpenses();
             }
+        }
 
-            const { error: updateError } = await mySupabase
-                .from('expenses')
-                .update(updateData)
-                .eq('id', expenseId);
-
-            if (updateError) {
-                alert('خطأ: ' + updateError.message);
+        async function approveAndDeduct(expenseId, amount, supervisorId) {
+            // Get supervisor current balance
+            const supervisor = supervisorsData.find(s => s.id === supervisorId);
+            if (!supervisor) {
+                alert('خطأ: لم يتم العثور على المشرف');
                 return;
             }
 
-            // If approved, deduct from supervisor balance and log transaction
-            if (newStatus === 'approved' && expense.supervisor_id) {
-                const newBalance = Number(expense.supervisor.current_balance) - Number(expense.amount);
+            const newBalance = Number(supervisor.current_balance) - Number(amount);
 
-                // Update supervisor balance
-                await mySupabase
-                    .from('supervisors')
-                    .update({ current_balance: newBalance, updated_at: new Date().toISOString() })
-                    .eq('id', expense.supervisor_id);
+            // Update expense status
+            const { error: expenseError } = await mySupabase
+                .from('expenses')
+                .update({
+                    status: 'approved',
+                    approved_at: new Date().toISOString()
+                })
+                .eq('id', expenseId);
 
-                // Log transaction
-                await mySupabase
-                    .from('supervisor_transactions')
-                    .insert({
-                        supervisor_id: expense.supervisor_id,
-                        transaction_type: 'expense_approved',
-                        amount: -expense.amount,
-                        balance_before: expense.supervisor.current_balance,
-                        balance_after: newBalance,
-                        expense_id: expenseId,
-                        notes: expense.description
-                    });
+            if (expenseError) {
+                alert('خطأ في تحديث المصروف: ' + expenseError.message);
+                return;
             }
 
-            await logAction(newStatus === 'approved' ? 'approve_expense' : 'reject_expense', 'expense', expenseId, { amount: expense.amount });
+            // Deduct from supervisor balance
+            const { error: balanceError } = await mySupabase
+                .from('supervisors')
+                .update({ current_balance: newBalance })
+                .eq('id', supervisorId);
 
-            alert(newStatus === 'approved' ? 'تم الموافقة على المصروف' : 'تم رفض المصروف');
+            if (balanceError) {
+                alert('خطأ في تحديث رصيد المشرف: ' + balanceError.message);
+                return;
+            }
+
+            // Log transaction
+            await mySupabase.from('supervisor_transactions').insert({
+                supervisor_id: supervisorId,
+                transaction_type: 'expense_deduction',
+                amount: -Number(amount),
+                balance_before: supervisor.current_balance,
+                balance_after: newBalance,
+                expense_id: expenseId,
+                notes: 'خصم مصروف معتمد'
+            });
+
+            await logAction('approve_expense', 'expense', expenseId, { amount, supervisor_id: supervisorId });
+            alert(`تم الموافقة على المصروف وخصم ${Number(amount).toLocaleString()} ر.س من رصيد ${supervisor.full_name}`);
             loadSupervisors();
             loadExpenses();
+        }
+
+        function showSupervisorSelectModal(expenseId, amount) {
+            const modalHtml = `
+                <div id="supervisorSelectModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="p-4 border-b">
+                            <h3 class="text-lg font-bold">اختر المشرف للخصم</h3>
+                            <p class="text-sm text-gray-500 mt-1">هذا المصروف غير مرتبط بمشرف. اختر المشرف الذي سيتم الخصم من رصيده.</p>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <p class="text-center font-bold text-lg text-purple-600">${Number(amount).toLocaleString()} ر.س</p>
+                            <div class="space-y-2">
+                                ${supervisorsData.map(s => `
+                                    <button onclick="selectSupervisorForExpense('${expenseId}', ${amount}, '${s.id}')"
+                                        class="w-full p-3 border rounded-lg hover:bg-blue-50 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                ${s.full_name.charAt(0)}
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-semibold">${s.full_name}</p>
+                                                <p class="text-xs text-gray-500">${s.region}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-sm text-gray-500">الرصيد الحالي</p>
+                                            <p class="font-bold ${Number(s.current_balance) < 5000 ? 'text-red-600' : 'text-green-600'}">${Number(s.current_balance).toLocaleString()} ر.س</p>
+                                        </div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="p-4 border-t">
+                            <button onclick="document.getElementById('supervisorSelectModal').remove()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        async function selectSupervisorForExpense(expenseId, amount, supervisorId) {
+            document.getElementById('supervisorSelectModal').remove();
+            await approveAndDeduct(expenseId, amount, supervisorId);
+        }
+
+        function assignSupervisorToExpense(expenseId, amount) {
+            const modalHtml = `
+                <div id="assignSupervisorModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="p-4 border-b">
+                            <h3 class="text-lg font-bold">تحديد المشرف للمصروف</h3>
+                            <p class="text-sm text-gray-500 mt-1">اختر المشرف الذي دفع هذا المصروف</p>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <p class="text-center font-bold text-lg text-purple-600">${Number(amount).toLocaleString()} ر.س</p>
+                            <div class="space-y-2">
+                                ${Object.entries(supervisorCodeMap).map(([code, data]) => {
+                                    const supervisor = supervisorsData.find(s =>
+                                        s.full_name.toLowerCase().includes(data.en.split(' ')[0].toLowerCase())
+                                    );
+                                    const currentBalance = supervisor ? Number(supervisor.current_balance) : 0;
+                                    return `
+                                    <button onclick="saveExpenseSupervisor('${expenseId}', '${code}')"
+                                        class="w-full p-3 border rounded-lg hover:bg-purple-50 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                ${data.ar.charAt(0)}
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-semibold">${data.ar}</p>
+                                                <p class="text-xs text-gray-500">${data.region}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-sm text-gray-500">الرصيد الحالي</p>
+                                            <p class="font-bold ${currentBalance < 5000 ? 'text-red-600' : 'text-green-600'}">${currentBalance.toLocaleString()} ر.س</p>
+                                        </div>
+                                    </button>
+                                `}).join('')}
+                            </div>
+                        </div>
+                        <div class="p-4 border-t">
+                            <button onclick="document.getElementById('assignSupervisorModal').remove()" class="w-full py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        async function saveExpenseSupervisor(expenseId, supervisorCode) {
+            const supervisorData = supervisorCodeMap[supervisorCode];
+            if (!supervisorData) {
+                alert('خطأ: المشرف غير موجود');
+                return;
+            }
+
+            const { error } = await mySupabase
+                .from('expenses')
+                .update({
+                    supervisor_id: supervisorCode,
+                    supervisor_name: supervisorData.ar + ' - ' + supervisorData.region,
+                    company_paid: true
+                })
+                .eq('id', expenseId);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            document.getElementById('assignSupervisorModal').remove();
+            alert('تم تحديد المشرف بنجاح');
+            loadExpenses();
+        }
+
+        function editCompanyBudget() {
+            if (!companyBudgetData) return;
+
+            const modalHtml = `
+                <div id="editCompanyBudgetModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="p-4 border-b flex items-center justify-between">
+                            <h3 class="text-lg font-bold">تعديل العهدة الكلية</h3>
+                            <button onclick="document.getElementById('editCompanyBudgetModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">إجمالي العهدة (المبلغ المستلم من الشركة)</label>
+                                <input type="number" id="newTotalBudget" value="${companyBudgetData.total_budget}"
+                                    class="w-full px-3 py-2 border rounded-lg" placeholder="إجمالي المبلغ">
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-sm text-gray-500">المتبقي للتوزيع حاليًا</p>
+                                <p class="font-bold text-lg">${Number(companyBudgetData.remaining_budget).toLocaleString()} ر.س</p>
+                            </div>
+                            <p class="text-xs text-gray-500">ملاحظة: عند تغيير إجمالي العهدة، سيتم تحديث المتبقي للتوزيع تلقائيًا</p>
+                        </div>
+                        <div class="p-4 border-t flex gap-2">
+                            <button onclick="document.getElementById('editCompanyBudgetModal').remove()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
+                                إلغاء
+                            </button>
+                            <button onclick="saveCompanyBudget()" class="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                                حفظ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        async function saveCompanyBudget() {
+            const newTotal = parseFloat(document.getElementById('newTotalBudget').value) || 0;
+            const oldTotal = Number(companyBudgetData.total_budget);
+            const difference = newTotal - oldTotal;
+            const newRemaining = Number(companyBudgetData.remaining_budget) + difference;
+
+            const { error } = await mySupabase
+                .from('company_budget')
+                .update({
+                    total_budget: newTotal,
+                    remaining_budget: newRemaining,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', companyBudgetData.id);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            document.getElementById('editCompanyBudgetModal').remove();
+            alert('تم تحديث العهدة بنجاح');
+            loadSupervisors();
+        }
+
+        function editSupervisorBudget(supervisorId) {
+            const supervisor = supervisorsData.find(s => s.id === supervisorId);
+            if (!supervisor) return;
+
+            const remainingBudget = companyBudgetData ? Number(companyBudgetData.remaining_budget) : 0;
+
+            const modalHtml = `
+                <div id="editBudgetModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="p-4 border-b flex items-center justify-between">
+                            <h3 class="text-lg font-bold">تعديل ميزانية ${supervisor.full_name}</h3>
+                            <button onclick="document.getElementById('editBudgetModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div class="bg-purple-50 rounded-lg p-3 text-center">
+                                <p class="text-sm text-purple-600">المتبقي من العهدة للتوزيع</p>
+                                <p class="font-bold text-xl text-purple-700">${remainingBudget.toLocaleString()} ر.س</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-1">الرصيد الأولي (الميزانية الشهرية)</label>
+                                <input type="number" id="newInitialBalance" value="${supervisor.initial_balance}"
+                                    class="w-full px-3 py-2 border rounded-lg" placeholder="الميزانية الشهرية">
+                                <p class="text-xs text-gray-500 mt-1">الرصيد الحالي سيتم تحديثه تلقائيًا بناءً على المصروفات المعتمدة</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-500">الرصيد الحالي:</span>
+                                    <span class="font-bold ${Number(supervisor.current_balance) < 5000 ? 'text-red-600' : 'text-green-600'}">${Number(supervisor.current_balance).toLocaleString()} ر.س</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 border-t flex gap-2">
+                            <button onclick="document.getElementById('editBudgetModal').remove()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
+                                إلغاء
+                            </button>
+                            <button onclick="saveSupervisorBudget('${supervisorId}', ${supervisor.initial_balance})" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                حفظ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        async function saveSupervisorBudget(supervisorId, oldInitialBalance) {
+            const newInitial = parseFloat(document.getElementById('newInitialBalance').value) || 0;
+            const oldInitial = parseFloat(oldInitialBalance) || 0;
+            const difference = newInitial - oldInitial;
+
+            // Check if we have enough remaining budget
+            if (difference > 0 && companyBudgetData) {
+                const remaining = Number(companyBudgetData.remaining_budget);
+                if (difference > remaining) {
+                    alert(`لا يوجد رصيد كافٍ في العهدة. المتبقي: ${remaining.toLocaleString()} ر.س`);
+                    return;
+                }
+            }
+
+            // Get the supervisor's current data to calculate new current_balance
+            const supervisor = supervisorsData.find(s => s.id === supervisorId);
+            const spentAmount = oldInitial - Number(supervisor.current_balance);
+            const newCurrentBalance = newInitial - spentAmount;
+
+            // Update supervisor balance
+            const { error } = await mySupabase
+                .from('supervisors')
+                .update({
+                    initial_balance: newInitial,
+                    current_balance: newCurrentBalance
+                })
+                .eq('id', supervisorId);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            // Update company remaining budget
+            if (difference !== 0 && companyBudgetData) {
+                const newRemaining = Number(companyBudgetData.remaining_budget) - difference;
+                await mySupabase
+                    .from('company_budget')
+                    .update({
+                        remaining_budget: newRemaining,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', companyBudgetData.id);
+            }
+
+            document.getElementById('editBudgetModal').remove();
+            alert('تم تحديث الميزانية بنجاح');
+            loadSupervisors();
         }
 
         function showExpenseDetail(expenseId) {
@@ -2367,8 +2888,7 @@
                 .from('expenses')
                 .select(`
                     *,
-                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code),
-                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name, region)
+                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code)
                 `)
                 .eq('id', expenseId)
                 .single()
@@ -2381,8 +2901,8 @@
                     const statusLabels = { pending: 'معلقة', approved: 'موافق عليها', rejected: 'مرفوضة' };
 
                     const modalHtml = `
-                        <div id="expenseDetailModal" class="modal active">
-                            <div class="modal-content bg-white rounded-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div id="expenseDetailModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                            <div class="bg-white rounded-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
                                 <div class="p-4 border-b flex items-center justify-between">
                                     <h3 class="text-lg font-bold">تفاصيل المصروف</h3>
                                     <button onclick="document.getElementById('expenseDetailModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
@@ -2404,8 +2924,19 @@
                                             <p class="font-medium">${expense.driver?.full_name || '-'}</p>
                                         </div>
                                         <div class="bg-gray-50 rounded-lg p-3">
+                                            <p class="text-sm text-gray-500">نوع المصروف</p>
+                                            <p class="font-medium">${expense.expense_type || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="bg-gray-50 rounded-lg p-3">
+                                            <p class="text-sm text-gray-500">دفعت الشركة؟</p>
+                                            <p class="font-medium">${expense.company_paid ? '✅ نعم' : '❌ لا'}</p>
+                                        </div>
+                                        <div class="bg-gray-50 rounded-lg p-3">
                                             <p class="text-sm text-gray-500">المشرف</p>
-                                            <p class="font-medium">${expense.supervisor?.full_name || '-'}</p>
+                                            <p class="font-medium">${expense.supervisor_name || '-'}</p>
                                         </div>
                                     </div>
 
@@ -2441,8 +2972,7 @@
                 .from('expenses')
                 .select(`
                     *,
-                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code),
-                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name, region)
+                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code)
                 `)
                 .order('created_at', { ascending: false });
 
@@ -2453,9 +2983,9 @@
 
             const statusLabels = { pending: 'معلقة', approved: 'موافق عليها', rejected: 'مرفوضة' };
 
-            let csv = 'التاريخ,السائق,كود السائق,المشرف,المنطقة,المبلغ,الوصف,الحالة,سبب الرفض\n';
+            let csv = 'التاريخ,السائق,كود السائق,المشرف,دفعت الشركة,المبلغ,الوصف,نوع المصروف,الحالة,سبب الرفض\n';
             data.forEach(e => {
-                csv += `"${new Date(e.created_at).toLocaleDateString('ar-SA')}","${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.supervisor?.full_name || ''}","${e.supervisor?.region || ''}","${e.amount}","${(e.description || '').replace(/"/g, '""')}","${statusLabels[e.status] || e.status}","${e.rejection_reason || ''}"\n`;
+                csv += `"${new Date(e.created_at).toLocaleDateString('ar-SA')}","${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.supervisor_name || ''}","${e.company_paid ? 'نعم' : 'لا'}","${e.amount}","${(e.description || '').replace(/"/g, '""')}","${e.expense_type || ''}","${statusLabels[e.status] || e.status}","${e.rejection_reason || ''}"\n`;
             });
 
             downloadCSV(csv, 'expenses_export.csv');
