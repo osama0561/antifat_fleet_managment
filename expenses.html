@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetCheck - المصروفات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [dir="rtl"] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .upload-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .upload-btn input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            right: 0;
+            cursor: pointer;
+        }
+        .preview-img {
+            max-height: 200px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold text-gray-900">رجوع</span>
+            </a>
+            <h1 class="text-lg font-bold text-gray-900">المصروفات</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6">
+
+        <!-- Info Card -->
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 mb-6 border border-purple-200">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center">
+                    <span class="text-3xl">💰</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">تسجيل مصروف جديد</h2>
+                    <p class="text-sm text-gray-600">أدخل تفاصيل المصروف وأرفق صورة الإيصال</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Form -->
+        <form id="expenseForm" class="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+
+            <!-- Driver Info (Read Only) -->
+            <div class="bg-gray-50 rounded-xl p-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">👤</span>
+                    <div>
+                        <p class="text-sm text-gray-500">السائق</p>
+                        <p id="driverName" class="font-bold text-gray-800">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supervisor Selection -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    المشرف <span class="text-red-500">*</span>
+                </label>
+                <select id="supervisorSelect" name="supervisor_id" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <option value="">اختر المشرف...</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">اختر المشرف المسؤول عن منطقتك</p>
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    المبلغ (ر.س) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <input type="number" id="amount" name="amount" required min="1" step="0.01"
+                        placeholder="أدخل المبلغ"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg font-bold">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">ر.س</span>
+                </div>
+            </div>
+
+            <!-- Expense Type -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    نوع المصروف <span class="text-red-500">*</span>
+                </label>
+                <select id="expenseType" name="expense_type" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <option value="fuel">وقود</option>
+                    <option value="maintenance">صيانة</option>
+                    <option value="cleaning">تنظيف</option>
+                    <option value="parking">مواقف</option>
+                    <option value="toll">رسوم طرق</option>
+                    <option value="food">طعام</option>
+                    <option value="other">أخرى</option>
+                </select>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    الوصف <span class="text-red-500">*</span>
+                </label>
+                <textarea id="description" name="description" required rows="3"
+                    placeholder="صف المصروف بالتفصيل (مثال: بنزين 91 - محطة أرامكو - طريق الملك)"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"></textarea>
+            </div>
+
+            <!-- Receipt Photo -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    صورة الإيصال <span class="text-red-500">*</span>
+                </label>
+                <div id="photoContainer" class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-500 transition-colors">
+                    <div id="photoPlaceholder">
+                        <span class="text-4xl mb-2 block">📷</span>
+                        <p class="text-gray-600 font-semibold">اضغط لإضافة صورة الإيصال</p>
+                        <p class="text-xs text-gray-500 mt-1">JPG, PNG (حد أقصى 5MB)</p>
+                    </div>
+                    <img id="photoPreview" src="" alt="Receipt preview" class="preview-img mx-auto hidden rounded-lg">
+                    <input type="file" id="receiptPhoto" name="receipt_photo" accept="image/*" required
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                </div>
+                <button type="button" id="removePhoto" class="hidden mt-2 text-sm text-red-600 hover:text-red-800">
+                    إزالة الصورة
+                </button>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn"
+                class="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2">
+                <span>إرسال طلب المصروف</span>
+                <span>💸</span>
+            </button>
+
+        </form>
+
+        <!-- Previous Expenses -->
+        <div class="mt-8">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">طلباتي السابقة</h3>
+            <div id="myExpenses" class="space-y-3">
+                <p class="text-center text-gray-500 py-4">جاري التحميل...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 text-center">
+            <div class="animate-spin w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-gray-700 font-semibold">جاري الإرسال...</p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-sm mx-4 text-center">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-4xl">✅</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">تم الإرسال بنجاح!</h3>
+            <p class="text-gray-600 mb-6">تم إرسال طلب المصروف وسيتم مراجعته من قبل المشرف</p>
+            <button onclick="closeSuccessModal()" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold">
+                حسناً
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentDriver = null;
+        let receiptFile = null;
+
+        async function init() {
+            // Check if logged in
+            const { data: { session } } = await mySupabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Get driver info
+            const { data: driver } = await mySupabase
+                .from('drivers')
+                .select('*')
+                .eq('email', session.user.email)
+                .eq('is_active', true)
+                .single();
+
+            if (!driver) {
+                alert('لم يتم العثور على حساب السائق');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentDriver = driver;
+            document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
+
+            // Load supervisors
+            await loadSupervisors();
+
+            // Load driver's previous expenses
+            await loadMyExpenses();
+        }
+
+        async function loadSupervisors() {
+            const { data: supervisors, error } = await mySupabase
+                .from('supervisors')
+                .select('*')
+                .eq('is_active', true)
+                .order('full_name');
+
+            if (error || !supervisors || supervisors.length === 0) {
+                document.getElementById('supervisorSelect').innerHTML = '<option value="">لا يوجد مشرفين</option>';
+                return;
+            }
+
+            const options = supervisors.map(s =>
+                `<option value="${s.id}">${s.full_name} - ${s.region}</option>`
+            ).join('');
+
+            document.getElementById('supervisorSelect').innerHTML =
+                '<option value="">اختر المشرف...</option>' + options;
+        }
+
+        async function loadMyExpenses() {
+            if (!currentDriver) return;
+
+            const { data: expenses, error } = await mySupabase
+                .from('expenses')
+                .select(`
+                    *,
+                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name)
+                `)
+                .eq('driver_id', currentDriver.id)
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            const container = document.getElementById('myExpenses');
+
+            if (error || !expenses || expenses.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">لا توجد طلبات سابقة</p>';
+                return;
+            }
+
+            const statusColors = {
+                pending: 'bg-yellow-100 text-yellow-800',
+                approved: 'bg-green-100 text-green-800',
+                rejected: 'bg-red-100 text-red-800'
+            };
+
+            const statusLabels = {
+                pending: 'قيد المراجعة',
+                approved: 'موافق عليه',
+                rejected: 'مرفوض'
+            };
+
+            container.innerHTML = expenses.map(e => `
+                <div class="bg-white rounded-xl p-4 shadow-sm border-r-4 ${e.status === 'approved' ? 'border-green-500' : e.status === 'rejected' ? 'border-red-500' : 'border-yellow-500'}">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="font-bold text-lg text-gray-800">${Number(e.amount).toLocaleString()} ر.س</p>
+                            <p class="text-sm text-gray-600">${e.description}</p>
+                            <p class="text-xs text-gray-400 mt-1">${new Date(e.created_at).toLocaleDateString('ar-SA')} | ${e.supervisor?.full_name || '-'}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColors[e.status] || 'bg-gray-100'}">${statusLabels[e.status] || e.status}</span>
+                    </div>
+                    ${e.rejection_reason ? `<p class="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">سبب الرفض: ${e.rejection_reason}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Handle photo selection
+        document.getElementById('receiptPhoto').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('حجم الصورة كبير جداً. الحد الأقصى 5MB');
+                this.value = '';
+                return;
+            }
+
+            receiptFile = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('photoPreview').src = event.target.result;
+                document.getElementById('photoPreview').classList.remove('hidden');
+                document.getElementById('photoPlaceholder').classList.add('hidden');
+                document.getElementById('removePhoto').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Remove photo
+        document.getElementById('removePhoto').addEventListener('click', function() {
+            receiptFile = null;
+            document.getElementById('receiptPhoto').value = '';
+            document.getElementById('photoPreview').src = '';
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('photoPlaceholder').classList.remove('hidden');
+            this.classList.add('hidden');
+        });
+
+        // Form submission
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!currentDriver) {
+                alert('خطأ: لم يتم تحميل بيانات السائق');
+                return;
+            }
+
+            if (!receiptFile) {
+                alert('الرجاء إرفاق صورة الإيصال');
+                return;
+            }
+
+            const supervisorId = document.getElementById('supervisorSelect').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const expenseType = document.getElementById('expenseType').value;
+            const description = document.getElementById('description').value.trim();
+
+            if (!supervisorId) {
+                alert('الرجاء اختيار المشرف');
+                return;
+            }
+
+            if (!amount || amount <= 0) {
+                alert('الرجاء إدخال مبلغ صحيح');
+                return;
+            }
+
+            if (!description) {
+                alert('الرجاء إدخال وصف المصروف');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                // Upload receipt photo
+                const timestamp = Date.now();
+                const fileName = `expenses/${currentDriver.id}/${timestamp}_${receiptFile.name}`;
+
+                const { data: uploadData, error: uploadError } = await mySupabase.storage
+                    .from('reports')
+                    .upload(fileName, receiptFile);
+
+                if (uploadError) {
+                    throw new Error('فشل في رفع الصورة: ' + uploadError.message);
+                }
+
+                // Get public URL
+                const { data: { publicUrl } } = mySupabase.storage
+                    .from('reports')
+                    .getPublicUrl(fileName);
+
+                // Insert expense record
+                const { error: insertError } = await mySupabase
+                    .from('expenses')
+                    .insert({
+                        driver_id: currentDriver.id,
+                        supervisor_id: supervisorId,
+                        amount: amount,
+                        description: description,
+                        expense_type: expenseType,
+                        receipt_photo_url: publicUrl,
+                        status: 'pending'
+                    });
+
+                if (insertError) {
+                    throw new Error('فشل في حفظ البيانات: ' + insertError.message);
+                }
+
+                // Success
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('successModal').classList.remove('hidden');
+
+                // Reset form
+                document.getElementById('expenseForm').reset();
+                receiptFile = null;
+                document.getElementById('photoPreview').src = '';
+                document.getElementById('photoPreview').classList.add('hidden');
+                document.getElementById('photoPlaceholder').classList.remove('hidden');
+                document.getElementById('removePhoto').classList.add('hidden');
+
+                // Reload expenses list
+                await loadMyExpenses();
+
+            } catch (error) {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                alert('خطأ: ' + error.message);
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

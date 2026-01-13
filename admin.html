@@ -121,6 +121,9 @@
             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="attendance">
                 📅 الحضور
             </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="expenses">
+                💰 المصروفات
+            </button>
         </div>
 
         <!-- DRIVERS TAB -->
@@ -358,6 +361,48 @@
             </div>
         </div>
 
+        <!-- EXPENSES TAB -->
+        <div id="expenses-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
+                    <h2 class="text-lg font-bold">المصروفات (العهدة)</h2>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportExpensesCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                            تصدير CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <!-- Supervisor Balances Summary -->
+                    <div id="supervisorBalances" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                        <!-- Will be populated by JS -->
+                    </div>
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <select id="expenseDateRange" class="px-3 py-2 border rounded-lg text-sm" onchange="loadExpenses()">
+                            <option value="today">اليوم</option>
+                            <option value="yesterday">أمس</option>
+                            <option value="last7" selected>آخر 7 أيام</option>
+                            <option value="last30">آخر 30 يوم</option>
+                            <option value="thisMonth">هذا الشهر</option>
+                            <option value="lastMonth">الشهر الماضي</option>
+                        </select>
+                        <select id="expenseStatus" class="px-3 py-2 border rounded-lg text-sm" onchange="loadExpenses()">
+                            <option value="all">الكل</option>
+                            <option value="pending">بانتظار الموافقة</option>
+                            <option value="approved">موافق عليه</option>
+                            <option value="rejected">مرفوض</option>
+                        </select>
+                        <select id="expenseSupervisor" class="px-3 py-2 border rounded-lg text-sm" onchange="loadExpenses()">
+                            <option value="all">كل المشرفين</option>
+                        </select>
+                    </div>
+                    <div id="expensesList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- ADD DRIVER MODAL -->
@@ -432,6 +477,27 @@
                 <div>
                     <label class="block text-sm font-semibold mb-1">رقم اللوحة *</label>
                     <input type="text" name="plate_number" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">الشركة المصنعة</label>
+                    <select name="make" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="">اختر...</option>
+                        <option value="Nissan">Nissan</option>
+                        <option value="Hais">Hais</option>
+                        <option value="Suzuki">Suzuki</option>
+                        <option value="GMC">GMC</option>
+                        <option value="Renault">Renault</option>
+                        <option value="Toyota">Toyota</option>
+                        <option value="Other">أخرى</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">الموديل</label>
+                    <input type="text" name="model" class="w-full px-3 py-2 border rounded-lg" placeholder="مثال: Urvan 2023">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">شركة التأجير</label>
+                    <input type="text" name="rental_company" class="w-full px-3 py-2 border rounded-lg" placeholder="اسم شركة التأجير">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">الموقع</label>
@@ -625,6 +691,71 @@
                 return;
             }
 
+            // Fetch accident counts for all drivers (last 6 months)
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            const { data: accidents } = await mySupabase
+                .from('accident_reports')
+                .select('driver_id')
+                .gte('submitted_at', sixMonthsAgo.toISOString());
+
+            // Count accidents per driver
+            const accidentCounts = {};
+            if (accidents) {
+                accidents.forEach(a => {
+                    accidentCounts[a.driver_id] = (accidentCounts[a.driver_id] || 0) + 1;
+                });
+            }
+
+            // Calculate current payroll period (21st to 20th)
+            const now = new Date();
+            let periodStart, periodEnd;
+            if (now.getDate() >= 21) {
+                periodStart = new Date(now.getFullYear(), now.getMonth(), 21);
+                periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 20);
+            } else {
+                periodStart = new Date(now.getFullYear(), now.getMonth() - 1, 21);
+                periodEnd = new Date(now.getFullYear(), now.getMonth(), 20);
+            }
+
+            // Fetch daily reports for the period
+            const { data: dailyReports } = await mySupabase
+                .from('daily_reports')
+                .select('driver_id, report_date')
+                .gte('report_date', periodStart.toISOString().split('T')[0])
+                .lte('report_date', periodEnd.toISOString().split('T')[0]);
+
+            // Build set of driver-date pairs with reports
+            const reportSet = new Set();
+            if (dailyReports) {
+                dailyReports.forEach(r => {
+                    reportSet.add(`${r.driver_id}_${r.report_date}`);
+                });
+            }
+
+            // Calculate absences per driver (excluding Fridays and future dates)
+            const absenceCounts = {};
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            drivers.forEach(driver => {
+                let absences = 0;
+                let current = new Date(periodStart);
+                while (current <= periodEnd && current < today) {
+                    const isFriday = current.getDay() === 5;
+                    const dateStr = current.toISOString().split('T')[0];
+                    const hasReport = reportSet.has(`${driver.id}_${dateStr}`);
+
+                    if (!isFriday && !hasReport) {
+                        absences++;
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+                if (absences > 0) {
+                    absenceCounts[driver.id] = absences;
+                }
+            });
+
             let filtered = drivers;
             if (search) {
                 filtered = drivers.filter(d =>
@@ -644,6 +775,18 @@
                 const statusText = driver.is_active ? 'نشط' : 'غير نشط';
                 const typeText = driver.driver_type === 'temporary' ? '(مؤقت)' : '';
 
+                // Strike badges
+                const absenceCount = absenceCounts[driver.id] || 0;
+                const accidentCount = accidentCounts[driver.id] || 0;
+
+                let strikeBadges = '';
+                if (absenceCount > 0) {
+                    strikeBadges += `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700" title="أيام الغياب هذا الشهر">🔴 ${absenceCount} غياب</span> `;
+                }
+                if (accidentCount > 0) {
+                    strikeBadges += `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700" title="حوادث آخر 6 أشهر">⚠️ ${accidentCount} حادث</span>`;
+                }
+
                 return `
                     <div class="border rounded-lg p-3 flex items-center justify-between hover:bg-gray-50">
                         <div class="flex items-center gap-3">
@@ -654,6 +797,7 @@
                                 <p class="font-semibold">${driver.full_name} <span class="text-xs text-gray-500">${typeText}</span></p>
                                 <p class="text-xs text-gray-500">${driver.driver_code} | ${driver.email}</p>
                                 <p class="text-xs text-gray-400">${vehicle ? vehicle.van_code + ' - ' + vehicle.plate_number : 'لا توجد مركبة'}</p>
+                                ${strikeBadges ? `<div class="flex flex-wrap gap-1 mt-1">${strikeBadges}</div>` : ''}
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -706,7 +850,10 @@
             if (search) {
                 filtered = vehicles.filter(v =>
                     v.van_code.toLowerCase().includes(search) ||
-                    v.plate_number.toLowerCase().includes(search)
+                    v.plate_number.toLowerCase().includes(search) ||
+                    (v.make && v.make.toLowerCase().includes(search)) ||
+                    (v.model && v.model.toLowerCase().includes(search)) ||
+                    (v.rental_company && v.rental_company.toLowerCase().includes(search))
                 );
             }
 
@@ -719,6 +866,8 @@
                 const driver = vehicle.driver_vehicle_assignments?.[0]?.drivers;
                 const statusClass = 'status-' + vehicle.status;
 
+                const makeModel = [vehicle.make, vehicle.model].filter(Boolean).join(' ') || '';
+
                 return `
                     <div class="border rounded-lg p-3 flex items-center justify-between hover:bg-gray-50">
                         <div class="flex items-center gap-3">
@@ -728,6 +877,8 @@
                             <div>
                                 <p class="font-semibold">${vehicle.van_code}</p>
                                 <p class="text-xs text-gray-500">${vehicle.plate_number}</p>
+                                ${makeModel ? `<p class="text-xs text-blue-600">${makeModel}</p>` : ''}
+                                ${vehicle.rental_company ? `<p class="text-xs text-purple-500">🏢 ${vehicle.rental_company}</p>` : ''}
                                 <p class="text-xs text-gray-400">${driver ? driver.full_name : 'غير مخصصة'}</p>
                             </div>
                         </div>
@@ -1350,6 +1501,9 @@
             const data = {
                 van_code: form.van_code.value,
                 plate_number: form.plate_number.value,
+                make: form.make.value || null,
+                model: form.model.value || null,
+                rental_company: form.rental_company.value || null,
                 location: form.location.value || null,
                 registration_expiry: form.registration_expiry.value || null,
                 insurance_expiry: form.insurance_expiry.value || null,
@@ -1393,6 +1547,10 @@
                 if (this.dataset.tab === 'attendance') {
                     initAttendanceMonthSelector();
                     loadAttendance();
+                }
+                if (this.dataset.tab === 'expenses') {
+                    loadSupervisors();
+                    loadExpenses();
                 }
             });
         });
@@ -1711,7 +1869,7 @@
         async function exportVehiclesCSV() {
             const { data: vehicles } = await mySupabase
                 .from('vehicles')
-                .select('van_code, plate_number, status, location, registration_expiry, insurance_expiry, created_at')
+                .select('van_code, plate_number, make, model, rental_company, status, location, registration_expiry, insurance_expiry, created_at')
                 .order('van_code');
 
             if (!vehicles || vehicles.length === 0) {
@@ -1719,10 +1877,10 @@
                 return;
             }
 
-            let csv = 'كود المركبة,رقم اللوحة,الحالة,الموقع,انتهاء التسجيل,انتهاء التأمين,تاريخ الإضافة\n';
+            let csv = 'كود المركبة,رقم اللوحة,الشركة المصنعة,الموديل,شركة التأجير,الحالة,الموقع,انتهاء التسجيل,انتهاء التأمين,تاريخ الإضافة\n';
             vehicles.forEach(v => {
                 const statusAr = { active: 'نشط', idle: 'متوقف', accident: 'حادث', maintenance: 'صيانة' }[v.status] || v.status;
-                csv += `"${v.van_code}","${v.plate_number}","${statusAr}","${v.location || ''}","${v.registration_expiry || ''}","${v.insurance_expiry || ''}","${v.created_at?.split('T')[0] || ''}"\n`;
+                csv += `"${v.van_code}","${v.plate_number}","${v.make || ''}","${v.model || ''}","${v.rental_company || ''}","${statusAr}","${v.location || ''}","${v.registration_expiry || ''}","${v.insurance_expiry || ''}","${v.created_at?.split('T')[0] || ''}"\n`;
             });
 
             downloadCSV(csv, 'vehicles_export.csv');
@@ -1986,6 +2144,327 @@
 خالد عبدالله,khaled@example.com,DRV-103,0551112233,permanent,`;
             downloadCSV(sample, 'drivers_sample.csv');
         }
+
+        // ========================================
+        // EXPENSES / PETTY CASH
+        // ========================================
+        let supervisorsData = [];
+
+        async function loadSupervisors() {
+            const { data: supervisors, error } = await mySupabase
+                .from('supervisors')
+                .select('*')
+                .eq('is_active', true)
+                .order('full_name');
+
+            if (error) {
+                console.error('Error loading supervisors:', error);
+                return;
+            }
+
+            supervisorsData = supervisors || [];
+
+            // Populate supervisor filter dropdown
+            const filterSelect = document.getElementById('expenseSupervisor');
+            filterSelect.innerHTML = '<option value="all">كل المشرفين</option>' +
+                supervisorsData.map(s => `<option value="${s.id}">${s.full_name} (${s.region})</option>`).join('');
+
+            // Render supervisor balance cards
+            const balancesHtml = supervisorsData.map(s => `
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                            ${s.full_name.charAt(0)}
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800">${s.full_name}</p>
+                            <p class="text-xs text-gray-500">${s.region}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-white rounded-lg p-2">
+                            <p class="text-xs text-gray-500">الرصيد الأولي</p>
+                            <p class="font-bold text-gray-700">${Number(s.initial_balance).toLocaleString()} ر.س</p>
+                        </div>
+                        <div class="bg-white rounded-lg p-2">
+                            <p class="text-xs text-gray-500">الرصيد الحالي</p>
+                            <p class="font-bold ${Number(s.current_balance) < 5000 ? 'text-red-600' : 'text-green-600'}">${Number(s.current_balance).toLocaleString()} ر.س</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('supervisorBalances').innerHTML = balancesHtml || '<p class="text-gray-500 col-span-3">لا يوجد مشرفين</p>';
+        }
+
+        async function loadExpenses() {
+            const dateRange = document.getElementById('expenseDateRange').value;
+            const status = document.getElementById('expenseStatus').value;
+            const supervisorId = document.getElementById('expenseSupervisor').value;
+
+            let query = mySupabase
+                .from('expenses')
+                .select(`
+                    *,
+                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code),
+                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name, region)
+                `)
+                .order('created_at', { ascending: false });
+
+            // Date filter
+            const now = new Date();
+            if (dateRange === 'today') {
+                const today = now.toISOString().split('T')[0];
+                query = query.gte('created_at', today);
+            } else if (dateRange === 'week') {
+                const weekAgo = new Date(now.setDate(now.getDate() - 7)).toISOString();
+                query = query.gte('created_at', weekAgo);
+            } else if (dateRange === 'month') {
+                const monthAgo = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+                query = query.gte('created_at', monthAgo);
+            }
+
+            // Status filter
+            if (status !== 'all') {
+                query = query.eq('status', status);
+            }
+
+            // Supervisor filter
+            if (supervisorId !== 'all') {
+                query = query.eq('supervisor_id', supervisorId);
+            }
+
+            const { data: expenses, error } = await query;
+
+            if (error) {
+                console.error('Error loading expenses:', error);
+                document.getElementById('expensesList').innerHTML = '<p class="text-center text-red-500 py-8">خطأ في تحميل البيانات</p>';
+                return;
+            }
+
+            if (!expenses || expenses.length === 0) {
+                document.getElementById('expensesList').innerHTML = '<p class="text-center text-gray-500 py-8">لا توجد مصروفات</p>';
+                return;
+            }
+
+            const statusColors = {
+                pending: 'bg-yellow-100 text-yellow-800',
+                approved: 'bg-green-100 text-green-800',
+                rejected: 'bg-red-100 text-red-800'
+            };
+
+            const statusLabels = {
+                pending: 'معلقة',
+                approved: 'موافق عليها',
+                rejected: 'مرفوضة'
+            };
+
+            const html = expenses.map(e => `
+                <div class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColors[e.status] || 'bg-gray-100'}">${statusLabels[e.status] || e.status}</span>
+                                <span class="text-sm text-gray-500">${new Date(e.created_at).toLocaleDateString('ar-SA')}</span>
+                            </div>
+                            <p class="font-bold text-lg text-gray-800">${Number(e.amount).toLocaleString()} ر.س</p>
+                            <p class="text-gray-600 mt-1">${e.description}</p>
+                            <div class="flex flex-wrap gap-3 mt-2 text-sm text-gray-500">
+                                <span>👤 ${e.driver?.full_name || 'غير معروف'} (${e.driver?.driver_code || ''})</span>
+                                ${e.supervisor ? `<span>📍 ${e.supervisor.full_name} - ${e.supervisor.region}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            ${e.receipt_photo_url ? `<button onclick="showExpenseDetail('${e.id}')" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm">📷 الإيصال</button>` : ''}
+                            ${e.status === 'pending' ? `
+                                <button onclick="updateExpenseStatus('${e.id}', 'approved')" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-sm">✓ موافقة</button>
+                                <button onclick="updateExpenseStatus('${e.id}', 'rejected')" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm">✗ رفض</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('expensesList').innerHTML = html;
+        }
+
+        async function updateExpenseStatus(expenseId, newStatus) {
+            const confirmMsg = newStatus === 'approved' ? 'هل تريد الموافقة على هذا المصروف؟' : 'هل تريد رفض هذا المصروف؟';
+
+            let rejectionReason = null;
+            if (newStatus === 'rejected') {
+                rejectionReason = prompt('سبب الرفض (اختياري):');
+                if (rejectionReason === null) return; // User cancelled
+            }
+
+            if (!confirm(confirmMsg)) return;
+
+            // Get expense details first
+            const { data: expense } = await mySupabase
+                .from('expenses')
+                .select('*, supervisor:supervisors!expenses_supervisor_id_fkey(*)')
+                .eq('id', expenseId)
+                .single();
+
+            if (!expense) {
+                alert('خطأ: لم يتم العثور على المصروف');
+                return;
+            }
+
+            // Update expense status
+            const updateData = {
+                status: newStatus,
+                approved_at: newStatus === 'approved' ? new Date().toISOString() : null
+            };
+            if (rejectionReason) {
+                updateData.rejection_reason = rejectionReason;
+            }
+
+            const { error: updateError } = await mySupabase
+                .from('expenses')
+                .update(updateData)
+                .eq('id', expenseId);
+
+            if (updateError) {
+                alert('خطأ: ' + updateError.message);
+                return;
+            }
+
+            // If approved, deduct from supervisor balance and log transaction
+            if (newStatus === 'approved' && expense.supervisor_id) {
+                const newBalance = Number(expense.supervisor.current_balance) - Number(expense.amount);
+
+                // Update supervisor balance
+                await mySupabase
+                    .from('supervisors')
+                    .update({ current_balance: newBalance, updated_at: new Date().toISOString() })
+                    .eq('id', expense.supervisor_id);
+
+                // Log transaction
+                await mySupabase
+                    .from('supervisor_transactions')
+                    .insert({
+                        supervisor_id: expense.supervisor_id,
+                        transaction_type: 'expense_approved',
+                        amount: -expense.amount,
+                        balance_before: expense.supervisor.current_balance,
+                        balance_after: newBalance,
+                        expense_id: expenseId,
+                        notes: expense.description
+                    });
+            }
+
+            await logAction(newStatus === 'approved' ? 'approve_expense' : 'reject_expense', 'expense', expenseId, { amount: expense.amount });
+
+            alert(newStatus === 'approved' ? 'تم الموافقة على المصروف' : 'تم رفض المصروف');
+            loadSupervisors();
+            loadExpenses();
+        }
+
+        function showExpenseDetail(expenseId) {
+            // Find expense in current data or fetch it
+            mySupabase
+                .from('expenses')
+                .select(`
+                    *,
+                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code),
+                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name, region)
+                `)
+                .eq('id', expenseId)
+                .single()
+                .then(({ data: expense, error }) => {
+                    if (error || !expense) {
+                        alert('خطأ في تحميل تفاصيل المصروف');
+                        return;
+                    }
+
+                    const statusLabels = { pending: 'معلقة', approved: 'موافق عليها', rejected: 'مرفوضة' };
+
+                    const modalHtml = `
+                        <div id="expenseDetailModal" class="modal active">
+                            <div class="modal-content bg-white rounded-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+                                <div class="p-4 border-b flex items-center justify-between">
+                                    <h3 class="text-lg font-bold">تفاصيل المصروف</h3>
+                                    <button onclick="document.getElementById('expenseDetailModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                                </div>
+                                <div class="p-4 space-y-4">
+                                    <div class="text-center">
+                                        <p class="text-3xl font-bold text-gray-800">${Number(expense.amount).toLocaleString()} ر.س</p>
+                                        <p class="text-gray-500">${statusLabels[expense.status] || expense.status}</p>
+                                    </div>
+
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <p class="text-sm text-gray-500">الوصف</p>
+                                        <p class="font-medium">${expense.description}</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="bg-gray-50 rounded-lg p-3">
+                                            <p class="text-sm text-gray-500">السائق</p>
+                                            <p class="font-medium">${expense.driver?.full_name || '-'}</p>
+                                        </div>
+                                        <div class="bg-gray-50 rounded-lg p-3">
+                                            <p class="text-sm text-gray-500">المشرف</p>
+                                            <p class="font-medium">${expense.supervisor?.full_name || '-'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <p class="text-sm text-gray-500">التاريخ</p>
+                                        <p class="font-medium">${new Date(expense.created_at).toLocaleString('ar-SA')}</p>
+                                    </div>
+
+                                    ${expense.receipt_photo_url ? `
+                                        <div>
+                                            <p class="text-sm text-gray-500 mb-2">صورة الإيصال</p>
+                                            <img src="${expense.receipt_photo_url}" alt="Receipt" class="w-full rounded-lg border" onclick="window.open('${expense.receipt_photo_url}', '_blank')">
+                                        </div>
+                                    ` : ''}
+
+                                    ${expense.rejection_reason ? `
+                                        <div class="bg-red-50 rounded-lg p-3">
+                                            <p class="text-sm text-red-500">سبب الرفض</p>
+                                            <p class="font-medium text-red-700">${expense.rejection_reason}</p>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                });
+        }
+
+        async function exportExpensesCSV() {
+            const { data } = await mySupabase
+                .from('expenses')
+                .select(`
+                    *,
+                    driver:drivers!expenses_driver_id_fkey(full_name, driver_code),
+                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name, region)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+                alert('لا توجد مصروفات للتصدير');
+                return;
+            }
+
+            const statusLabels = { pending: 'معلقة', approved: 'موافق عليها', rejected: 'مرفوضة' };
+
+            let csv = 'التاريخ,السائق,كود السائق,المشرف,المنطقة,المبلغ,الوصف,الحالة,سبب الرفض\n';
+            data.forEach(e => {
+                csv += `"${new Date(e.created_at).toLocaleDateString('ar-SA')}","${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.supervisor?.full_name || ''}","${e.supervisor?.region || ''}","${e.amount}","${(e.description || '').replace(/"/g, '""')}","${statusLabels[e.status] || e.status}","${e.rejection_reason || ''}"\n`;
+            });
+
+            downloadCSV(csv, 'expenses_export.csv');
+        }
+
+        // Expense filter event listeners
+        document.getElementById('expenseDateRange').addEventListener('change', loadExpenses);
+        document.getElementById('expenseStatus').addEventListener('change', loadExpenses);
+        document.getElementById('expenseSupervisor').addEventListener('change', loadExpenses);
 
         // ========================================
         // SEARCH HANDLERS

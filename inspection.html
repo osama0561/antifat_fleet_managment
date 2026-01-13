@@ -158,56 +158,154 @@
                 </div>
             </div>
 
+            <!-- ODOMETER READING INPUT -->
+            <div>
+                <label class="block text-lg font-bold text-gray-700 mb-3">🔢 قراءة عداد الكيلومترات *</label>
+                <div class="relative">
+                    <input type="number" id="odometerReading" required min="0" step="1"
+                        class="w-full px-4 py-4 text-2xl font-bold text-center border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="أدخل الرقم من العداد">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">KM</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">Odometer Reading - أدخل قراءة العداد كما تظهر في الصورة</p>
+            </div>
+
             <!-- LIGHTS CHECK SECTION -->
             <div class="border-t pt-6">
                 <label class="block text-lg font-bold text-gray-700 mb-3">💡 فحص الأنوار *</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="check-item">
-                        <input type="checkbox" id="lightFront">
-                        <div>
-                            <span class="font-semibold">الأنوار الأمامية</span>
-                            <span class="text-xs text-gray-500 block">Front Lights</span>
+                <p class="text-sm text-gray-500 mb-4">هل الأنوار تعمل بشكل صحيح؟ / Are the lights working properly?</p>
+
+                <div class="space-y-4">
+                    <!-- Front Lights -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-3xl">🔦</span>
+                            <div>
+                                <span class="font-bold text-lg">الأضواء الأمامية</span>
+                                <span class="text-xs text-gray-500 block">Front Lights / Headlights</span>
+                            </div>
                         </div>
-                    </label>
-                    <label class="check-item">
-                        <input type="checkbox" id="lightBack">
-                        <div>
-                            <span class="font-semibold">الأنوار الخلفية</span>
-                            <span class="text-xs text-gray-500 block">Back Lights</span>
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="lightFront" value="yes" class="hidden peer" required>
+                                <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">✅</span>
+                                    <span class="font-bold">نعم - تعمل</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="lightFront" value="no" class="hidden peer">
+                                <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">❌</span>
+                                    <span class="font-bold">لا - يوجد مشكلة</span>
+                                </div>
+                            </label>
                         </div>
-                    </label>
-                    <label class="check-item">
-                        <input type="checkbox" id="signalRight">
-                        <div>
-                            <span class="font-semibold">إشارة اليمين</span>
-                            <span class="text-xs text-gray-500 block">Right Signal</span>
+                    </div>
+
+                    <!-- Back Lights -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-3xl">🔴</span>
+                            <div>
+                                <span class="font-bold text-lg">الأضواء الخلفية</span>
+                                <span class="text-xs text-gray-500 block">Back Lights / Tail Lights</span>
+                            </div>
                         </div>
-                    </label>
-                    <label class="check-item">
-                        <input type="checkbox" id="signalLeft">
-                        <div>
-                            <span class="font-semibold">إشارة اليسار</span>
-                            <span class="text-xs text-gray-500 block">Left Signal</span>
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="lightBack" value="yes" class="hidden peer" required>
+                                <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">✅</span>
+                                    <span class="font-bold">نعم - تعمل</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="lightBack" value="no" class="hidden peer">
+                                <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">❌</span>
+                                    <span class="font-bold">لا - يوجد مشكلة</span>
+                                </div>
+                            </label>
                         </div>
-                    </label>
+                    </div>
+
+                    <!-- Right Signal -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-3xl">➡️</span>
+                            <div>
+                                <span class="font-bold text-lg">إشارة الانعطاف يمين</span>
+                                <span class="text-xs text-gray-500 block">Right Turn Signal ➡️</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="signalRight" value="yes" class="hidden peer" required>
+                                <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">✅</span>
+                                    <span class="font-bold">نعم - تعمل</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="signalRight" value="no" class="hidden peer">
+                                <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">❌</span>
+                                    <span class="font-bold">لا - يوجد مشكلة</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Signal -->
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-3xl">⬅️</span>
+                            <div>
+                                <span class="font-bold text-lg">إشارة الانعطاف يسار</span>
+                                <span class="text-xs text-gray-500 block">Left Turn Signal ⬅️</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="signalLeft" value="yes" class="hidden peer" required>
+                                <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">✅</span>
+                                    <span class="font-bold">نعم - تعمل</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="signalLeft" value="no" class="hidden peer">
+                                <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 bg-white border-2 border-gray-300 rounded-xl p-3 text-center transition-all">
+                                    <span class="text-2xl block">❌</span>
+                                    <span class="font-bold">لا - يوجد مشكلة</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- FRIDGE/COOLER CHECK -->
             <div class="border-t pt-6">
-                <label class="block text-lg font-bold text-gray-700 mb-3">❄️ حالة الثلاجة/التبريد</label>
+                <label class="block text-lg font-bold text-gray-700 mb-3">❄️ حالة الثلاجة/التبريد *</label>
+                <p class="text-sm text-gray-500 mb-4">هل التبريد يعمل؟ / Is the cooler working?</p>
                 <div class="flex gap-4">
-                    <label class="check-item flex-1 justify-center">
-                        <input type="radio" name="fridgeStatus" value="working" class="w-5 h-5">
-                        <span class="font-semibold text-green-700">✅ تعمل</span>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="fridgeStatus" value="working" class="hidden peer" required>
+                        <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 bg-white border-2 border-gray-300 rounded-xl p-4 text-center transition-all">
+                            <span class="text-3xl block">✅</span>
+                            <span class="font-bold block mt-2">نعم - يعمل</span>
+                            <span class="text-xs block">Working</span>
+                        </div>
                     </label>
-                    <label class="check-item flex-1 justify-center">
-                        <input type="radio" name="fridgeStatus" value="not_working" class="w-5 h-5">
-                        <span class="font-semibold text-red-700">❌ لا تعمل</span>
-                    </label>
-                    <label class="check-item flex-1 justify-center">
-                        <input type="radio" name="fridgeStatus" value="no_fridge" class="w-5 h-5">
-                        <span class="font-semibold text-gray-600">🚫 لا يوجد</span>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="fridgeStatus" value="not_working" class="hidden peer">
+                        <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 bg-white border-2 border-gray-300 rounded-xl p-4 text-center transition-all">
+                            <span class="text-3xl block">❌</span>
+                            <span class="font-bold block mt-2">لا - لا يعمل</span>
+                            <span class="text-xs block">Not Working</span>
+                        </div>
                     </label>
                 </div>
             </div>
@@ -400,13 +498,21 @@
                 return;
             }
 
-            // Validate lights check
-            const lightsChecked = document.getElementById('lightFront').checked &&
-                                  document.getElementById('lightBack').checked &&
-                                  document.getElementById('signalRight').checked &&
-                                  document.getElementById('signalLeft').checked;
-            if (!lightsChecked) {
-                alert('يرجى فحص جميع الأنوار والإشارات');
+            // Validate lights check (now using radio buttons)
+            const lightFrontSelected = document.querySelector('input[name="lightFront"]:checked');
+            const lightBackSelected = document.querySelector('input[name="lightBack"]:checked');
+            const signalRightSelected = document.querySelector('input[name="signalRight"]:checked');
+            const signalLeftSelected = document.querySelector('input[name="signalLeft"]:checked');
+
+            if (!lightFrontSelected || !lightBackSelected || !signalRightSelected || !signalLeftSelected) {
+                alert('يرجى تحديد حالة جميع الأنوار والإشارات (نعم أو لا)\nPlease select Yes or No for all lights');
+                return;
+            }
+
+            // Validate odometer reading
+            const odometerReading = document.getElementById('odometerReading').value;
+            if (!odometerReading || odometerReading <= 0) {
+                alert('يرجى إدخال قراءة عداد الكيلومترات\nPlease enter odometer reading');
                 return;
             }
 
@@ -460,12 +566,13 @@
                     photo_dashboard: dashboardUrl,
                     notes: document.getElementById('notes').value || '',
                     declaration_accepted: true,
-                    // New fields
-                    light_front: document.getElementById('lightFront').checked,
-                    light_back: document.getElementById('lightBack').checked,
-                    signal_right: document.getElementById('signalRight').checked,
-                    signal_left: document.getElementById('signalLeft').checked,
+                    // Light status (yes = working, no = problem)
+                    light_front: lightFrontSelected.value === 'yes',
+                    light_back: lightBackSelected.value === 'yes',
+                    signal_right: signalRightSelected.value === 'yes',
+                    signal_left: signalLeftSelected.value === 'yes',
                     fridge_status: fridgeStatus.value,
+                    odometer_reading: parseInt(odometerReading),
                     gps_latitude: currentLocation?.latitude || null,
                     gps_longitude: currentLocation?.longitude || null,
                     gps_accuracy: currentLocation?.accuracy || null,
@@ -495,6 +602,11 @@
                 const typeLabel = inspectionType.value === 'receive' ? '📥 استلام' : '📤 تسليم';
                 const statusLabel = inspectionType.value === 'receive' ? 'المركبة أصبحت نشطة (Active)' : 'المركبة أصبحت متوقفة (Idle)';
 
+                // Check if any lights have issues
+                const lightsOk = lightFrontSelected.value === 'yes' && lightBackSelected.value === 'yes' &&
+                                 signalRightSelected.value === 'yes' && signalLeftSelected.value === 'yes';
+                const lightsStatus = lightsOk ? '✅ جميع الأنوار تعمل' : '⚠️ يوجد مشاكل في بعض الأنوار';
+
                 document.getElementById('successMessage').innerHTML = `
                     <div class="text-center">
                         <span class="text-4xl">✅</span>
@@ -506,9 +618,10 @@
                             <hr class="my-2">
                             <p><strong>السائق:</strong> ${currentDriver.full_name}</p>
                             <p><strong>المركبة:</strong> ${currentVehicle.van_code} - ${currentVehicle.plate_number}</p>
+                            <p><strong>قراءة العداد:</strong> ${parseInt(odometerReading).toLocaleString()} KM</p>
                             <p><strong>الصور:</strong> ✅ 5 صور مرفوعة</p>
-                            <p><strong>الأنوار:</strong> ✅ تم الفحص</p>
-                            <p><strong>الثلاجة:</strong> ${fridgeStatus.value === 'working' ? '✅ تعمل' : fridgeStatus.value === 'not_working' ? '❌ لا تعمل' : '🚫 لا يوجد'}</p>
+                            <p><strong>الأنوار:</strong> ${lightsStatus}</p>
+                            <p><strong>الثلاجة:</strong> ${fridgeStatus.value === 'working' ? '✅ يعمل' : '❌ لا يعمل'}</p>
                             ${currentLocation ? `<p><strong>الموقع:</strong> 📍 تم التسجيل</p>` : ''}
                         </div>
                     </div>
