@@ -73,16 +73,45 @@
                 </div>
             </div>
 
-            <!-- Supervisor Selection -->
+            <!-- Company Paid Question -->
             <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    هل دفعت لك الشركة؟ <span class="text-red-500">*</span>
+                </label>
+                <p class="text-xs text-gray-500 mb-3">Did the company pay you?</p>
+                <div class="flex gap-4">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="companyPaid" value="yes" class="hidden peer" required>
+                        <div class="peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 bg-white border-2 border-gray-300 rounded-xl p-4 text-center transition-all">
+                            <span class="text-2xl block">✅</span>
+                            <span class="font-bold block mt-1">نعم</span>
+                            <span class="text-xs block">Yes</span>
+                        </div>
+                    </label>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="companyPaid" value="no" class="hidden peer">
+                        <div class="peer-checked:bg-red-500 peer-checked:text-white peer-checked:border-red-500 bg-white border-2 border-gray-300 rounded-xl p-4 text-center transition-all">
+                            <span class="text-2xl block">❌</span>
+                            <span class="font-bold block mt-1">لا</span>
+                            <span class="text-xs block">No</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Supervisor Selection (Only shown if company paid = Yes) -->
+            <div id="supervisorSection" class="hidden">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
                     المشرف <span class="text-red-500">*</span>
                 </label>
-                <select id="supervisorSelect" name="supervisor_id" required
+                <select id="supervisorSelect" name="supervisor_id"
                     class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <option value="">اختر المشرف...</option>
+                    <option value="cedarmean">Cedarmean Hassan Hashim - JEDDAH</option>
+                    <option value="sleiman">Sleiman Hassan Rio</option>
+                    <option value="mohammed">Mohammed Alyjah - JEDDAH</option>
                 </select>
-                <p class="text-xs text-gray-500 mt-1">اختر المشرف المسؤول عن منطقتك</p>
+                <p class="text-xs text-gray-500 mt-1">اختر المشرف الذي دفع لك</p>
             </div>
 
             <!-- Amount -->
@@ -118,11 +147,13 @@
             <!-- Description -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    الوصف <span class="text-red-500">*</span>
+                    الوصف <span id="descRequiredStar" class="text-red-500 hidden">*</span>
+                    <span id="descOptionalLabel" class="text-gray-400 text-xs">(اختياري)</span>
                 </label>
-                <textarea id="description" name="description" required rows="3"
+                <textarea id="description" name="description" rows="3"
                     placeholder="صف المصروف بالتفصيل (مثال: بنزين 91 - محطة أرامكو - طريق الملك)"
                     class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"></textarea>
+                <p id="descRequiredNote" class="text-xs text-red-500 mt-1 hidden">الوصف مطلوب عند اختيار "أخرى"</p>
             </div>
 
             <!-- Receipt Photo -->
@@ -137,7 +168,7 @@
                         <p class="text-xs text-gray-500 mt-1">JPG, PNG (حد أقصى 5MB)</p>
                     </div>
                     <img id="photoPreview" src="" alt="Receipt preview" class="preview-img mx-auto hidden rounded-lg">
-                    <input type="file" id="receiptPhoto" name="receipt_photo" accept="image/*" required
+                    <input type="file" id="receiptPhoto" name="receipt_photo" accept="image/*"
                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                 </div>
                 <button type="button" id="removePhoto" class="hidden mt-2 text-sm text-red-600 hover:text-red-800">
@@ -153,14 +184,6 @@
             </button>
 
         </form>
-
-        <!-- Previous Expenses -->
-        <div class="mt-8">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">طلباتي السابقة</h3>
-            <div id="myExpenses" class="space-y-3">
-                <p class="text-center text-gray-500 py-4">جاري التحميل...</p>
-            </div>
-        </div>
 
     </main>
 
@@ -220,78 +243,52 @@
             currentDriver = driver;
             document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
 
-            // Load supervisors
-            await loadSupervisors();
-
-            // Load driver's previous expenses
-            await loadMyExpenses();
+            // Setup event listeners
+            setupCompanyPaidListener();
+            setupExpenseTypeListener();
         }
 
-        async function loadSupervisors() {
-            const { data: supervisors, error } = await mySupabase
-                .from('supervisors')
-                .select('*')
-                .eq('is_active', true)
-                .order('full_name');
+        // Show/hide supervisor section based on company paid answer
+        function setupCompanyPaidListener() {
+            const radios = document.querySelectorAll('input[name="companyPaid"]');
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const supervisorSection = document.getElementById('supervisorSection');
+                    const supervisorSelect = document.getElementById('supervisorSelect');
 
-            if (error || !supervisors || supervisors.length === 0) {
-                document.getElementById('supervisorSelect').innerHTML = '<option value="">لا يوجد مشرفين</option>';
-                return;
-            }
-
-            const options = supervisors.map(s =>
-                `<option value="${s.id}">${s.full_name} - ${s.region}</option>`
-            ).join('');
-
-            document.getElementById('supervisorSelect').innerHTML =
-                '<option value="">اختر المشرف...</option>' + options;
+                    if (this.value === 'yes') {
+                        supervisorSection.classList.remove('hidden');
+                        supervisorSelect.required = true;
+                    } else {
+                        supervisorSection.classList.add('hidden');
+                        supervisorSelect.required = false;
+                        supervisorSelect.value = '';
+                    }
+                });
+            });
         }
 
-        async function loadMyExpenses() {
-            if (!currentDriver) return;
+        // Make description required when expense type is "other"
+        function setupExpenseTypeListener() {
+            const expenseType = document.getElementById('expenseType');
+            expenseType.addEventListener('change', function() {
+                const descRequiredStar = document.getElementById('descRequiredStar');
+                const descOptionalLabel = document.getElementById('descOptionalLabel');
+                const descRequiredNote = document.getElementById('descRequiredNote');
+                const description = document.getElementById('description');
 
-            const { data: expenses, error } = await mySupabase
-                .from('expenses')
-                .select(`
-                    *,
-                    supervisor:supervisors!expenses_supervisor_id_fkey(full_name)
-                `)
-                .eq('driver_id', currentDriver.id)
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            const container = document.getElementById('myExpenses');
-
-            if (error || !expenses || expenses.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-500 py-4">لا توجد طلبات سابقة</p>';
-                return;
-            }
-
-            const statusColors = {
-                pending: 'bg-yellow-100 text-yellow-800',
-                approved: 'bg-green-100 text-green-800',
-                rejected: 'bg-red-100 text-red-800'
-            };
-
-            const statusLabels = {
-                pending: 'قيد المراجعة',
-                approved: 'موافق عليه',
-                rejected: 'مرفوض'
-            };
-
-            container.innerHTML = expenses.map(e => `
-                <div class="bg-white rounded-xl p-4 shadow-sm border-r-4 ${e.status === 'approved' ? 'border-green-500' : e.status === 'rejected' ? 'border-red-500' : 'border-yellow-500'}">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <p class="font-bold text-lg text-gray-800">${Number(e.amount).toLocaleString()} ر.س</p>
-                            <p class="text-sm text-gray-600">${e.description}</p>
-                            <p class="text-xs text-gray-400 mt-1">${new Date(e.created_at).toLocaleDateString('ar-SA')} | ${e.supervisor?.full_name || '-'}</p>
-                        </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColors[e.status] || 'bg-gray-100'}">${statusLabels[e.status] || e.status}</span>
-                    </div>
-                    ${e.rejection_reason ? `<p class="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">سبب الرفض: ${e.rejection_reason}</p>` : ''}
-                </div>
-            `).join('');
+                if (this.value === 'other') {
+                    descRequiredStar.classList.remove('hidden');
+                    descOptionalLabel.classList.add('hidden');
+                    descRequiredNote.classList.remove('hidden');
+                    description.required = true;
+                } else {
+                    descRequiredStar.classList.add('hidden');
+                    descOptionalLabel.classList.remove('hidden');
+                    descRequiredNote.classList.add('hidden');
+                    description.required = false;
+                }
+            });
         }
 
         // Handle photo selection
@@ -338,28 +335,37 @@
                 return;
             }
 
+            // Check company paid selection
+            const companyPaid = document.querySelector('input[name="companyPaid"]:checked');
+            if (!companyPaid) {
+                alert('الرجاء تحديد هل دفعت لك الشركة أم لا');
+                return;
+            }
+
+            // If company paid = yes, supervisor is required
+            const supervisorId = document.getElementById('supervisorSelect').value;
+            if (companyPaid.value === 'yes' && !supervisorId) {
+                alert('الرجاء اختيار المشرف');
+                return;
+            }
+
             if (!receiptFile) {
                 alert('الرجاء إرفاق صورة الإيصال');
                 return;
             }
 
-            const supervisorId = document.getElementById('supervisorSelect').value;
             const amount = parseFloat(document.getElementById('amount').value);
             const expenseType = document.getElementById('expenseType').value;
             const description = document.getElementById('description').value.trim();
-
-            if (!supervisorId) {
-                alert('الرجاء اختيار المشرف');
-                return;
-            }
 
             if (!amount || amount <= 0) {
                 alert('الرجاء إدخال مبلغ صحيح');
                 return;
             }
 
-            if (!description) {
-                alert('الرجاء إدخال وصف المصروف');
+            // Description required only for "other" expense type
+            if (expenseType === 'other' && !description) {
+                alert('الرجاء إدخال وصف المصروف عند اختيار "أخرى"');
                 return;
             }
 
@@ -390,9 +396,11 @@
                     .from('expenses')
                     .insert({
                         driver_id: currentDriver.id,
-                        supervisor_id: supervisorId,
+                        supervisor_id: companyPaid.value === 'yes' ? supervisorId : null,
+                        supervisor_name: companyPaid.value === 'yes' ? document.getElementById('supervisorSelect').options[document.getElementById('supervisorSelect').selectedIndex].text : null,
+                        company_paid: companyPaid.value === 'yes',
                         amount: amount,
-                        description: description,
+                        description: description || null,
                         expense_type: expenseType,
                         receipt_photo_url: publicUrl,
                         status: 'pending'
@@ -413,9 +421,10 @@
                 document.getElementById('photoPreview').classList.add('hidden');
                 document.getElementById('photoPlaceholder').classList.remove('hidden');
                 document.getElementById('removePhoto').classList.add('hidden');
-
-                // Reload expenses list
-                await loadMyExpenses();
+                document.getElementById('supervisorSection').classList.add('hidden');
+                document.getElementById('descRequiredStar').classList.add('hidden');
+                document.getElementById('descOptionalLabel').classList.remove('hidden');
+                document.getElementById('descRequiredNote').classList.add('hidden');
 
             } catch (error) {
                 document.getElementById('loadingOverlay').classList.add('hidden');
