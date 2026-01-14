@@ -370,39 +370,69 @@
                 <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
                     <h2 class="text-lg font-bold">المصروفات (العهدة)</h2>
                     <div class="flex items-center gap-2 flex-wrap">
+                        <!-- Month Selector -->
+                        <select id="budgetMonth" class="px-3 py-2 border rounded-lg text-sm font-semibold bg-purple-50" onchange="loadBudgetPeriod()">
+                        </select>
                         <button onclick="exportExpensesCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
                             تصدير CSV
                         </button>
                     </div>
                 </div>
                 <div class="p-4">
-                    <!-- Company Total Budget (العهدة) -->
+                    <!-- Company Total Budget (العهدة) - Renamed to الرصيد الافتتاحي -->
                     <div id="companyBudgetBlock" class="bg-gradient-to-br from-purple-600 to-purple-800 text-white p-6 rounded-xl mb-4 shadow-lg">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h3 class="text-xl font-bold mb-1">العهدة الكلية</h3>
-                                <p class="text-purple-200 text-sm">المبلغ المستلم من الشركة</p>
+                                <h3 class="text-xl font-bold mb-1">ميزانية الشهر</h3>
+                                <p class="text-purple-200 text-sm" id="currentPeriodLabel">يناير 2026</p>
                             </div>
-                            <button onclick="editCompanyBudget()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="تعديل العهدة">
+                            <button onclick="editCompanyBudget()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="تعديل الميزانية">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
                         </div>
-                        <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div class="mt-4 grid grid-cols-3 gap-3">
                             <div class="bg-white/10 rounded-lg p-3 text-center">
-                                <p class="text-purple-200 text-sm">إجمالي العهدة</p>
-                                <p id="totalBudgetDisplay" class="text-2xl font-bold">0 ر.س</p>
+                                <p class="text-purple-200 text-xs">الرصيد الافتتاحي</p>
+                                <p id="totalBudgetDisplay" class="text-xl font-bold">0 ر.س</p>
                             </div>
                             <div class="bg-white/10 rounded-lg p-3 text-center">
-                                <p class="text-purple-200 text-sm">المتبقي للتوزيع</p>
-                                <p id="remainingBudgetDisplay" class="text-2xl font-bold">0 ر.س</p>
+                                <p class="text-purple-200 text-xs">تم توزيعه</p>
+                                <p id="distributedDisplay" class="text-xl font-bold">0 ر.س</p>
+                            </div>
+                            <div class="bg-white/10 rounded-lg p-3 text-center">
+                                <p class="text-purple-200 text-xs">المتبقي للتوزيع</p>
+                                <p id="remainingBudgetDisplay" class="text-xl font-bold">0 ر.س</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Supervisor Balances Summary -->
-                    <div id="supervisorBalances" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                        <!-- Will be populated by JS -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-gray-700">أرصدة المشرفين</h3>
+                            <button onclick="showTransferHistoryModal()" class="text-sm text-purple-600 hover:text-purple-800">
+                                📋 سجل التحويلات
+                            </button>
+                        </div>
+                        <div id="supervisorBalances" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <!-- Will be populated by JS -->
+                        </div>
                     </div>
+
+                    <!-- Driver Monthly Summary -->
+                    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-gray-700">📊 ملخص مصروفات السائقين (هذا الشهر)</h3>
+                            <button onclick="exportDriverExpensesCSV()" class="text-sm text-green-600 hover:text-green-800">
+                                📥 تصدير
+                            </button>
+                        </div>
+                        <div id="driverExpensesSummary" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <!-- Will be populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
                     <div class="flex flex-wrap gap-3 mb-4">
                         <select id="expenseDateRange" class="px-3 py-2 border rounded-lg text-sm" onchange="loadExpenses()">
                             <option value="today">اليوم</option>
@@ -1613,7 +1643,8 @@
                     loadAttendance();
                 }
                 if (this.dataset.tab === 'expenses') {
-                    loadSupervisors();
+                    initBudgetMonthSelector();
+                    loadBudgetPeriod();
                     loadExpenses();
                 }
             });
@@ -2248,28 +2279,76 @@
         // ========================================
         let supervisorsData = [];
         let companyBudgetData = null;
+        let currentBudgetPeriod = null;
 
-        async function loadCompanyBudget() {
-            const { data, error } = await mySupabase
-                .from('company_budget')
-                .select('*')
-                .limit(1)
-                .single();
+        const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
-            if (error) {
-                console.error('Error loading company budget:', error);
-                return;
+        // Initialize month selector
+        function initBudgetMonthSelector() {
+            const select = document.getElementById('budgetMonth');
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+
+            // Generate last 12 months + next 2 months
+            const months = [];
+            for (let i = -2; i <= 12; i++) {
+                const date = new Date(currentYear, currentMonth - 1 - i, 1);
+                months.push({
+                    month: date.getMonth() + 1,
+                    year: date.getFullYear(),
+                    label: `${arabicMonths[date.getMonth()]} ${date.getFullYear()}`
+                });
             }
 
-            companyBudgetData = data;
-            document.getElementById('totalBudgetDisplay').textContent = `${Number(data.total_budget).toLocaleString()} ر.س`;
-            document.getElementById('remainingBudgetDisplay').textContent = `${Number(data.remaining_budget).toLocaleString()} ر.س`;
+            select.innerHTML = months.map(m =>
+                `<option value="${m.month}-${m.year}" ${m.month === currentMonth && m.year === currentYear ? 'selected' : ''}>${m.label}</option>`
+            ).join('');
+        }
+
+        async function loadBudgetPeriod() {
+            const select = document.getElementById('budgetMonth');
+            const [month, year] = select.value.split('-').map(Number);
+
+            // Try to get existing period or create new one
+            let { data: period, error } = await mySupabase
+                .from('budget_periods')
+                .select('*')
+                .eq('period_month', month)
+                .eq('period_year', year)
+                .single();
+
+            if (error || !period) {
+                // Create new period
+                const { data: newPeriod } = await mySupabase
+                    .from('budget_periods')
+                    .insert([{ period_month: month, period_year: year, opening_balance: 0, remaining_balance: 0 }])
+                    .select()
+                    .single();
+                period = newPeriod;
+            }
+
+            currentBudgetPeriod = period;
+
+            // Update display
+            document.getElementById('currentPeriodLabel').textContent = `${arabicMonths[month - 1]} ${year}`;
+            document.getElementById('totalBudgetDisplay').textContent = `${Number(period?.opening_balance || 0).toLocaleString()} ر.س`;
+            document.getElementById('distributedDisplay').textContent = `${Number(period?.total_distributed || 0).toLocaleString()} ر.س`;
+            document.getElementById('remainingBudgetDisplay').textContent = `${Number(period?.remaining_balance || 0).toLocaleString()} ر.س`;
+
+            // Reload supervisors and expenses for this period
+            await loadSupervisors();
+            await loadDriverExpensesSummary();
+        }
+
+        async function loadCompanyBudget() {
+            // This now loads from budget_periods based on selected month
+            if (!currentBudgetPeriod) {
+                await loadBudgetPeriod();
+            }
         }
 
         async function loadSupervisors() {
-            // Load company budget first
-            await loadCompanyBudget();
-
             const { data: supervisors, error } = await mySupabase
                 .from('supervisors')
                 .select('*')
@@ -2283,33 +2362,45 @@
 
             supervisorsData = supervisors || [];
 
-            // Calculate and update remaining budget based on supervisors' initial balances
-            if (companyBudgetData) {
-                const totalAssigned = supervisorsData.reduce((sum, s) => sum + Number(s.initial_balance), 0);
-                const calculatedRemaining = Number(companyBudgetData.total_budget) - totalAssigned;
+            // Load transfers for each supervisor in current period
+            for (let s of supervisorsData) {
+                const { data: transfers } = await mySupabase
+                    .from('supervisor_transfers')
+                    .select('amount')
+                    .eq('supervisor_id', s.id);
 
-                // Update display with calculated remaining
-                document.getElementById('remainingBudgetDisplay').textContent = `${calculatedRemaining.toLocaleString()} ر.س`;
+                s.total_transfers = (transfers || []).reduce((sum, t) => sum + Number(t.amount), 0);
 
-                // Also update the stored value if different
-                if (calculatedRemaining !== Number(companyBudgetData.remaining_budget)) {
-                    companyBudgetData.remaining_budget = calculatedRemaining;
-                    // Sync to database
-                    mySupabase.from('company_budget').update({ remaining_budget: calculatedRemaining }).eq('id', companyBudgetData.id);
-                }
+                // Calculate approved expenses for this supervisor
+                const { data: expenses } = await mySupabase
+                    .from('expenses')
+                    .select('amount')
+                    .eq('supervisor_id', s.id)
+                    .eq('status', 'approved');
+
+                s.total_expenses = (expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
+                s.current_balance = s.total_transfers - s.total_expenses;
             }
 
-            // Populate supervisor filter dropdown with codes
+            // Calculate total distributed
+            const totalDistributed = supervisorsData.reduce((sum, s) => sum + Number(s.total_transfers), 0);
+            if (currentBudgetPeriod) {
+                document.getElementById('distributedDisplay').textContent = `${totalDistributed.toLocaleString()} ر.س`;
+                const remaining = Number(currentBudgetPeriod.opening_balance) - totalDistributed;
+                document.getElementById('remainingBudgetDisplay').textContent = `${remaining.toLocaleString()} ر.س`;
+            }
+
+            // Populate supervisor filter dropdown
             const filterSelect = document.getElementById('expenseSupervisor');
             filterSelect.innerHTML = '<option value="all">كل المشرفين</option>' +
                 Object.entries(supervisorCodeMap).map(([code, data]) =>
                     `<option value="${code}">${data.ar} - ${data.region}</option>`
                 ).join('');
 
-            // Render supervisor balance cards
+            // Render supervisor balance cards with new design
             const balancesHtml = supervisorsData.map(s => `
                 <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
-                    <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2">
                             <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
                                 ${s.full_name.charAt(0)}
@@ -2319,24 +2410,258 @@
                                 <p class="text-xs text-gray-500">${s.region}</p>
                             </div>
                         </div>
-                        <button onclick="editSupervisorBudget('${s.id}')" class="p-2 text-blue-600 hover:bg-blue-200 rounded-lg" title="تعديل الميزانية">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        </button>
                     </div>
-                    <div class="mt-3 grid grid-cols-2 gap-2 text-center">
-                        <div class="bg-white rounded-lg p-2">
-                            <p class="text-xs text-gray-500">الرصيد الأولي</p>
-                            <p class="font-bold text-gray-700">${Number(s.initial_balance).toLocaleString()} ر.س</p>
+                    <div class="grid grid-cols-3 gap-1 text-center text-xs mb-3">
+                        <div class="bg-white rounded p-2">
+                            <p class="text-gray-500">التحويلات</p>
+                            <p class="font-bold text-blue-600">${Number(s.total_transfers).toLocaleString()}</p>
                         </div>
-                        <div class="bg-white rounded-lg p-2">
-                            <p class="text-xs text-gray-500">الرصيد الحالي</p>
-                            <p class="font-bold ${Number(s.current_balance) < 5000 ? 'text-red-600' : 'text-green-600'}">${Number(s.current_balance).toLocaleString()} ر.س</p>
+                        <div class="bg-white rounded p-2">
+                            <p class="text-gray-500">المصروفات</p>
+                            <p class="font-bold text-red-600">${Number(s.total_expenses).toLocaleString()}</p>
                         </div>
+                        <div class="bg-white rounded p-2">
+                            <p class="text-gray-500">المتبقي</p>
+                            <p class="font-bold ${s.current_balance < 0 ? 'text-red-600' : 'text-green-600'}">${Number(s.current_balance).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="showAddTransferModal('${s.id}', '${s.full_name}')" class="flex-1 py-2 text-xs bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold">
+                            💰 إضافة تحويل
+                        </button>
+                        <button onclick="showSupervisorTransfers('${s.id}', '${s.full_name}')" class="flex-1 py-2 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold">
+                            📋 السجل
+                        </button>
                     </div>
                 </div>
             `).join('');
 
             document.getElementById('supervisorBalances').innerHTML = balancesHtml || '<p class="text-gray-500 col-span-3">لا يوجد مشرفين</p>';
+        }
+
+        // Show Add Transfer Modal
+        function showAddTransferModal(supervisorId, supervisorName) {
+            const modal = document.createElement('div');
+            modal.id = 'addTransferModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-md">
+                    <div class="p-4 border-b flex items-center justify-between">
+                        <h3 class="text-lg font-bold">💰 إضافة تحويل لـ ${supervisorName}</h3>
+                        <button onclick="document.getElementById('addTransferModal').remove()" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">المبلغ (ر.س) *</label>
+                            <input type="number" id="transferAmount" required class="w-full px-3 py-2 border rounded-lg" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">تاريخ التحويل</label>
+                            <input type="date" id="transferDate" class="w-full px-3 py-2 border rounded-lg" value="${new Date().toISOString().split('T')[0]}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">صورة الإيصال</label>
+                            <input type="file" id="transferReceipt" accept="image/*" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">ملاحظات</label>
+                            <textarea id="transferNotes" rows="2" class="w-full px-3 py-2 border rounded-lg" placeholder="ملاحظات إضافية..."></textarea>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t flex gap-2">
+                        <button onclick="document.getElementById('addTransferModal').remove()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">إلغاء</button>
+                        <button onclick="saveTransfer('${supervisorId}')" class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold">حفظ التحويل</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Save Transfer
+        async function saveTransfer(supervisorId) {
+            const amount = document.getElementById('transferAmount').value;
+            const transferDate = document.getElementById('transferDate').value;
+            const notes = document.getElementById('transferNotes').value;
+            const receiptFile = document.getElementById('transferReceipt').files[0];
+
+            if (!amount || Number(amount) <= 0) {
+                alert('يرجى إدخال مبلغ صحيح');
+                return;
+            }
+
+            let receiptUrl = null;
+            if (receiptFile) {
+                const fileName = `transfer_${Date.now()}_${receiptFile.name}`;
+                const { data: uploadData, error: uploadError } = await mySupabase.storage
+                    .from('expenses')
+                    .upload(fileName, receiptFile);
+
+                if (!uploadError) {
+                    const { data: urlData } = mySupabase.storage.from('expenses').getPublicUrl(fileName);
+                    receiptUrl = urlData.publicUrl;
+                }
+            }
+
+            const { error } = await mySupabase.from('supervisor_transfers').insert([{
+                supervisor_id: supervisorId,
+                amount: Number(amount),
+                transfer_date: transferDate,
+                receipt_url: receiptUrl,
+                notes: notes,
+                budget_period_id: currentBudgetPeriod?.id
+            }]);
+
+            if (error) {
+                alert('خطأ في حفظ التحويل: ' + error.message);
+                return;
+            }
+
+            document.getElementById('addTransferModal').remove();
+            await loadSupervisors();
+            alert('تم إضافة التحويل بنجاح');
+        }
+
+        // Show Supervisor Transfers
+        async function showSupervisorTransfers(supervisorId, supervisorName) {
+            const { data: transfers } = await mySupabase
+                .from('supervisor_transfers')
+                .select('*')
+                .eq('supervisor_id', supervisorId)
+                .order('transfer_date', { ascending: false });
+
+            const modal = document.createElement('div');
+            modal.id = 'transfersModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+
+            const transfersList = (transfers || []).map(t => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-bold text-green-600">+${Number(t.amount).toLocaleString()} ر.س</p>
+                        <p class="text-xs text-gray-500">${new Date(t.transfer_date).toLocaleDateString('ar-SA')}</p>
+                        ${t.notes ? `<p class="text-xs text-gray-600 mt-1">${t.notes}</p>` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        ${t.receipt_url ? `<button onclick="window.open('${t.receipt_url}', '_blank')" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">📷</button>` : ''}
+                        <button onclick="deleteTransfer('${t.id}')" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded">🗑️</button>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center text-gray-500 py-4">لا توجد تحويلات</p>';
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden">
+                    <div class="p-4 border-b flex items-center justify-between">
+                        <h3 class="text-lg font-bold">📋 تحويلات ${supervisorName}</h3>
+                        <button onclick="document.getElementById('transfersModal').remove()" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div class="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                        ${transfersList}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Delete Transfer
+        async function deleteTransfer(transferId) {
+            if (!confirm('هل أنت متأكد من حذف هذا التحويل؟')) return;
+
+            await mySupabase.from('supervisor_transfers').delete().eq('id', transferId);
+            document.getElementById('transfersModal').remove();
+            await loadSupervisors();
+        }
+
+        // Show Transfer History Modal (all supervisors)
+        async function showTransferHistoryModal() {
+            const { data: transfers } = await mySupabase
+                .from('supervisor_transfers')
+                .select('*, supervisors(full_name)')
+                .order('transfer_date', { ascending: false })
+                .limit(50);
+
+            const modal = document.createElement('div');
+            modal.id = 'transferHistoryModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+
+            const transfersList = (transfers || []).map(t => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-semibold">${t.supervisors?.full_name || 'غير معروف'}</p>
+                        <p class="text-sm text-green-600 font-bold">+${Number(t.amount).toLocaleString()} ر.س</p>
+                        <p class="text-xs text-gray-500">${new Date(t.transfer_date).toLocaleDateString('ar-SA')}</p>
+                    </div>
+                    ${t.receipt_url ? `<button onclick="window.open('${t.receipt_url}', '_blank')" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded">📷 إيصال</button>` : ''}
+                </div>
+            `).join('') || '<p class="text-center text-gray-500 py-4">لا توجد تحويلات</p>';
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-lg max-h-[80vh] overflow-hidden">
+                    <div class="p-4 border-b flex items-center justify-between">
+                        <h3 class="text-lg font-bold">📋 سجل جميع التحويلات</h3>
+                        <button onclick="document.getElementById('transferHistoryModal').remove()" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div class="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                        ${transfersList}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Load Driver Expenses Summary
+        async function loadDriverExpensesSummary() {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+
+            const { data: expenses } = await mySupabase
+                .from('expenses')
+                .select('amount, driver:drivers!expenses_driver_id_fkey(full_name)')
+                .eq('status', 'approved')
+                .gte('created_at', startOfMonth)
+                .lte('created_at', endOfMonth);
+
+            // Group by driver
+            const driverTotals = {};
+            (expenses || []).forEach(e => {
+                const name = e.driver?.full_name || 'غير معروف';
+                driverTotals[name] = (driverTotals[name] || 0) + Number(e.amount);
+            });
+
+            const summaryHtml = Object.entries(driverTotals)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, total]) => `
+                    <div class="bg-white rounded-lg p-2 text-center border">
+                        <p class="text-xs text-gray-500 truncate">${name}</p>
+                        <p class="font-bold text-sm">${total.toLocaleString()} ر.س</p>
+                    </div>
+                `).join('') || '<p class="text-gray-500 col-span-4 text-center py-2">لا توجد مصروفات هذا الشهر</p>';
+
+            document.getElementById('driverExpensesSummary').innerHTML = summaryHtml;
+        }
+
+        // Export Driver Expenses CSV
+        async function exportDriverExpensesCSV() {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+            const { data: expenses } = await mySupabase
+                .from('expenses')
+                .select('amount, description, created_at, driver:drivers!expenses_driver_id_fkey(full_name, driver_code)')
+                .eq('status', 'approved')
+                .gte('created_at', startOfMonth)
+                .order('created_at', { ascending: false });
+
+            if (!expenses || expenses.length === 0) {
+                alert('لا توجد مصروفات للتصدير');
+                return;
+            }
+
+            let csv = 'السائق,كود السائق,المبلغ,الوصف,التاريخ\n';
+            expenses.forEach(e => {
+                csv += `"${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.amount}","${e.description}","${new Date(e.created_at).toLocaleDateString('ar-SA')}"\n`;
+            });
+
+            downloadCSV(csv, `driver_expenses_${now.getFullYear()}_${now.getMonth() + 1}.csv`);
         }
 
         async function loadExpenses() {
@@ -2727,26 +3052,34 @@
         }
 
         function editCompanyBudget() {
-            if (!companyBudgetData) return;
+            if (!currentBudgetPeriod) return;
+
+            const periodLabel = `${arabicMonths[currentBudgetPeriod.period_month - 1]} ${currentBudgetPeriod.period_year}`;
+            const totalDistributed = supervisorsData.reduce((sum, s) => sum + Number(s.total_transfers || 0), 0);
+            const remaining = Number(currentBudgetPeriod.opening_balance) - totalDistributed;
 
             const modalHtml = `
                 <div id="editCompanyBudgetModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
                         <div class="p-4 border-b flex items-center justify-between">
-                            <h3 class="text-lg font-bold">تعديل العهدة الكلية</h3>
+                            <h3 class="text-lg font-bold">تعديل ميزانية ${periodLabel}</h3>
                             <button onclick="document.getElementById('editCompanyBudgetModal').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                         </div>
                         <div class="p-4 space-y-4">
                             <div>
-                                <label class="block text-sm font-semibold mb-1">إجمالي العهدة (المبلغ المستلم من الشركة)</label>
-                                <input type="number" id="newTotalBudget" value="${companyBudgetData.total_budget}"
-                                    class="w-full px-3 py-2 border rounded-lg" placeholder="إجمالي المبلغ">
+                                <label class="block text-sm font-semibold mb-1">الرصيد الافتتاحي (المبلغ المستلم من الشركة)</label>
+                                <input type="number" id="newOpeningBalance" value="${currentBudgetPeriod.opening_balance || 0}"
+                                    class="w-full px-3 py-2 border rounded-lg" placeholder="الرصيد الافتتاحي">
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-3">
+                                <p class="text-sm text-blue-600">تم توزيعه للمشرفين</p>
+                                <p class="font-bold text-lg">${totalDistributed.toLocaleString()} ر.س</p>
                             </div>
                             <div class="bg-gray-50 rounded-lg p-3">
-                                <p class="text-sm text-gray-500">المتبقي للتوزيع حاليًا</p>
-                                <p class="font-bold text-lg">${Number(companyBudgetData.remaining_budget).toLocaleString()} ر.س</p>
+                                <p class="text-sm text-gray-500">المتبقي للتوزيع</p>
+                                <p class="font-bold text-lg">${remaining.toLocaleString()} ر.س</p>
                             </div>
-                            <p class="text-xs text-gray-500">ملاحظة: عند تغيير إجمالي العهدة، سيتم تحديث المتبقي للتوزيع تلقائيًا</p>
+                            <p class="text-xs text-gray-500">ملاحظة: الرصيد الافتتاحي هو المبلغ الإجمالي المتاح لهذا الشهر</p>
                         </div>
                         <div class="p-4 border-t flex gap-2">
                             <button onclick="document.getElementById('editCompanyBudgetModal').remove()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
@@ -2763,28 +3096,25 @@
         }
 
         async function saveCompanyBudget() {
-            const newTotal = parseFloat(document.getElementById('newTotalBudget').value) || 0;
-            const oldTotal = Number(companyBudgetData.total_budget);
-            const difference = newTotal - oldTotal;
-            const newRemaining = Number(companyBudgetData.remaining_budget) + difference;
+            const newOpeningBalance = parseFloat(document.getElementById('newOpeningBalance').value) || 0;
 
             const { error } = await mySupabase
-                .from('company_budget')
+                .from('budget_periods')
                 .update({
-                    total_budget: newTotal,
-                    remaining_budget: newRemaining,
+                    opening_balance: newOpeningBalance,
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', companyBudgetData.id);
+                .eq('id', currentBudgetPeriod.id);
 
             if (error) {
                 alert('خطأ: ' + error.message);
                 return;
             }
 
+            currentBudgetPeriod.opening_balance = newOpeningBalance;
             document.getElementById('editCompanyBudgetModal').remove();
-            alert('تم تحديث العهدة بنجاح');
-            loadSupervisors();
+            alert('تم تحديث الميزانية بنجاح');
+            await loadBudgetPeriod();
         }
 
         function editSupervisorBudget(supervisorId) {
