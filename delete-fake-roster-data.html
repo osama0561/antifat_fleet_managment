@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Fake Roster Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4 text-red-600">Delete Fake Roster Data</h1>
+        <p class="text-gray-600 mb-6">This script will delete all roster testing data from the database.</p>
+
+        <div id="status" class="space-y-2 mb-6">
+            <p class="text-gray-500">Click the button below to delete all roster data...</p>
+        </div>
+
+        <button onclick="deleteAllData()" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold">
+            Delete All Roster Data
+        </button>
+
+        <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-red-800 text-sm">
+                <strong>Warning:</strong> This will permanently delete all data from:
+                <ul class="list-disc list-inside mt-2">
+                    <li>scheduled_shifts</li>
+                    <li>vehicle_assignments</li>
+                    <li>leave_requests</li>
+                    <li>time_records</li>
+                </ul>
+                Shift templates will be preserved.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const colors = {
+                info: 'text-blue-600',
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600'
+            };
+            statusDiv.innerHTML += `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        async function deleteAllData() {
+            if (!confirm('Are you sure you want to delete all roster data? This cannot be undone.')) {
+                return;
+            }
+
+            document.getElementById('status').innerHTML = '';
+            log('Starting data deletion...', 'warning');
+
+            try {
+                // Delete in order to respect foreign key constraints
+
+                // 1. Delete vehicle assignments
+                log('Deleting vehicle assignments...', 'info');
+                const { error: assignError } = await supabase
+                    .from('vehicle_assignments')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                if (assignError) throw assignError;
+                log('Vehicle assignments deleted', 'success');
+
+                // 2. Delete time records
+                log('Deleting time records...', 'info');
+                const { error: timeError } = await supabase
+                    .from('time_records')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                if (timeError) throw timeError;
+                log('Time records deleted', 'success');
+
+                // 3. Delete leave requests
+                log('Deleting leave requests...', 'info');
+                const { error: leaveError } = await supabase
+                    .from('leave_requests')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                if (leaveError) throw leaveError;
+                log('Leave requests deleted', 'success');
+
+                // 4. Delete scheduled shifts
+                log('Deleting scheduled shifts...', 'info');
+                const { error: shiftsError } = await supabase
+                    .from('scheduled_shifts')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                if (shiftsError) throw shiftsError;
+                log('Scheduled shifts deleted', 'success');
+
+                log('All roster data deleted successfully!', 'success');
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

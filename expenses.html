@@ -93,6 +93,16 @@
                 </select>
             </div>
 
+            <!-- Expense Date (CRITICAL FIX #2: Max 7 days backdating) -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    تاريخ المصروف <span class="text-red-500">*</span>
+                </label>
+                <input type="date" id="expenseDate" name="expense_date" required
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <p class="text-xs text-gray-500 mt-1">يمكن تسجيل المصروفات لآخر 7 أيام فقط</p>
+            </div>
+
             <!-- Amount -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -246,6 +256,16 @@
             currentDriver = driver;
             document.getElementById('driverName').textContent = driver.full_name + ' (' + driver.driver_code + ')';
 
+            // CRITICAL FIX #2: Setup date picker with max 7 days backdating
+            const today = new Date();
+            const maxDate = today.toISOString().split('T')[0];
+            const minDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+            const expenseDateInput = document.getElementById('expenseDate');
+            expenseDateInput.value = maxDate;
+            expenseDateInput.max = maxDate;
+            expenseDateInput.min = minDate;
+
             // Setup event listeners
             setupCompanyPaidListener();
             setupExpenseTypeListener();
@@ -372,6 +392,28 @@
                 return;
             }
 
+            // CRITICAL FIX #2: Validate expense date (max 7 days backdating)
+            const expenseDate = document.getElementById('expenseDate').value;
+            if (!expenseDate) {
+                alert('الرجاء تحديد تاريخ المصروف');
+                return;
+            }
+
+            const selectedDate = new Date(expenseDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            if (selectedDate > today) {
+                alert('⚠️ لا يمكن تسجيل مصروف بتاريخ مستقبلي');
+                return;
+            }
+
+            if (selectedDate < sevenDaysAgo) {
+                alert('⚠️ لا يمكن تسجيل مصروف أقدم من 7 أيام\n\nيرجى التواصل مع الإدارة للمصروفات القديمة');
+                return;
+            }
+
             // Show loading
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('submitBtn').disabled = true;
@@ -405,6 +447,7 @@
                         amount: amount,
                         description: description || null,
                         expense_type: expenseType,
+                        expense_date: expenseDate,  // CRITICAL FIX #2: Store expense date
                         receipt_photo_url: publicUrl,
                         status: 'pending'
                     });
@@ -428,6 +471,8 @@
                 document.getElementById('descRequiredStar').classList.add('hidden');
                 document.getElementById('descOptionalLabel').classList.remove('hidden');
                 document.getElementById('descRequiredNote').classList.add('hidden');
+                // Reset date to today
+                document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
 
             } catch (error) {
                 document.getElementById('loadingOverlay').classList.add('hidden');

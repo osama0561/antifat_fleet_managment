@@ -10,6 +10,8 @@
         .tab-btn.active { background: #3b82f6; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .roster-subtab.active { background: #3b82f6; color: white; }
+        .roster-content.hidden { display: none; }
         .modal { display: none; }
         .modal.active { display: flex; }
         .status-badge { padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
@@ -39,6 +41,26 @@
             </div>
             <div class="flex items-center gap-3">
                 <span id="adminName" class="text-sm text-gray-600"></span>
+                <!-- Audit Log Button -->
+                <button onclick="showAuditLog()" class="p-2 hover:bg-gray-100 rounded-lg" title="سجل المعاملات">
+                    <span class="text-xl">📋</span>
+                </button>
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button onclick="toggleNotifications()" class="relative p-2 hover:bg-gray-100 rounded-lg">
+                        <span class="text-xl">🔔</span>
+                        <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <div id="notificationPanel" class="hidden absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-lg border max-h-96 overflow-y-auto z-50">
+                        <div class="p-3 border-b flex items-center justify-between">
+                            <h3 class="font-bold">الإشعارات</h3>
+                            <button onclick="markAllNotificationsRead()" class="text-xs text-blue-600 hover:underline">تعيين الكل كمقروء</button>
+                        </div>
+                        <div id="notificationsList" class="divide-y">
+                            <p class="text-center text-gray-500 py-4">لا توجد إشعارات</p>
+                        </div>
+                    </div>
+                </div>
                 <button id="logoutBtn" class="px-4 py-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg">
                     خروج
                 </button>
@@ -119,10 +141,13 @@
                 📋 التحويلات اليومية
             </button>
             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="attendance">
-                📅 الحضور
+                📅 الجدولة والحضور
             </button>
             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="expenses">
                 💰 المصروفات
+            </button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200" data-tab="returns">
+                📦 الرجيع
             </button>
         </div>
 
@@ -138,7 +163,7 @@
                         <button onclick="showBulkImportModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm">
                             📤 استيراد CSV
                         </button>
-                        <button onclick="showAddDriverModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                        <button onclick="showAddDriverModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm" data-permission="manage_drivers">
                             + إضافة سائق
                         </button>
                     </div>
@@ -169,7 +194,7 @@
                         <button onclick="exportVehiclesCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
                             📥 تصدير CSV
                         </button>
-                        <button onclick="showAddVehicleModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                        <button onclick="showAddVehicleModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm" data-permission="manage_vehicles">
                             + إضافة مركبة
                         </button>
                     </div>
@@ -315,21 +340,99 @@
             </div>
         </div>
 
-        <!-- ATTENDANCE TAB -->
+        <!-- ATTENDANCE/ROSTER TAB -->
         <div id="attendance-tab" class="tab-content">
             <div class="bg-white rounded-xl shadow-sm">
-                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
-                    <h2 class="text-lg font-bold">تقرير الحضور</h2>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <select id="attendanceMonth" class="px-3 py-2 border rounded-lg text-sm" onchange="loadAttendance()">
-                            <!-- Will be populated by JS -->
-                        </select>
-                        <button onclick="exportAttendanceCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
-                            تصدير CSV
+                <!-- Sub-tabs for roster management -->
+                <div class="p-4 border-b">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                        <h2 class="text-lg font-bold">📅 إدارة الجدولة والحضور</h2>
+                        <div class="flex gap-2">
+                            <button onclick="showAddShiftModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                                + جدولة وردية
+                            </button>
+                            <button onclick="showShiftTemplatesModal()" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm">
+                                ⚙️ القوالب
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Sub-navigation -->
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="roster-subtab active px-4 py-2 rounded-lg text-sm font-semibold" data-subtab="schedule" onclick="switchRosterTab('schedule')">
+                            📆 جدول الورديات
+                        </button>
+                        <button class="roster-subtab px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100" data-subtab="attendance" onclick="switchRosterTab('attendance')">
+                            ✅ تقرير الحضور
+                        </button>
+                        <button class="roster-subtab px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100" data-subtab="leaves" onclick="switchRosterTab('leaves')">
+                            🏖️ طلبات الإجازة
+                        </button>
+                        <button class="roster-subtab px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100" data-subtab="timetrack" onclick="switchRosterTab('timetrack')">
+                            ⏱️ تسجيل الحضور
+                        </button>
+                        <button class="roster-subtab px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100" data-subtab="analytics" onclick="switchRosterTab('analytics')">
+                            📊 التحليلات والتقارير
                         </button>
                     </div>
                 </div>
-                <div class="p-4">
+
+                <!-- SCHEDULE SUB-TAB -->
+                <div id="schedule-subtab" class="roster-content p-4">
+                    <!-- Week Navigation -->
+                    <div class="flex items-center justify-between mb-4">
+                        <button onclick="changeWeek(-1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">◀ الأسبوع السابق</button>
+                        <h3 id="currentWeekLabel" class="font-bold text-lg">الأسبوع الحالي</h3>
+                        <button onclick="changeWeek(1)" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">الأسبوع التالي ▶</button>
+                    </div>
+
+                    <!-- Shift Templates Legend -->
+                    <div id="shiftTemplatesLegend" class="flex gap-3 mb-4 flex-wrap">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Today's Summary -->
+                    <div id="todaySummary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div class="bg-blue-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-blue-600">مجدولين اليوم</p>
+                            <p id="scheduledToday" class="text-2xl font-bold text-blue-700">0</p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-green-600">حاضرين</p>
+                            <p id="presentToday" class="text-2xl font-bold text-green-700">0</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-yellow-600">متأخرين</p>
+                            <p id="lateToday" class="text-2xl font-bold text-yellow-700">0</p>
+                        </div>
+                        <div class="bg-red-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-red-600">غائبين</p>
+                            <p id="absentToday" class="text-2xl font-bold text-red-700">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Schedule Grid -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border-collapse" id="scheduleTable">
+                            <thead id="scheduleHeader">
+                                <!-- Populated by JS -->
+                            </thead>
+                            <tbody id="scheduleBody">
+                                <tr><td colspan="8" class="text-center py-8 text-gray-500">جاري التحميل...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ATTENDANCE SUB-TAB -->
+                <div id="attendance-subtab" class="roster-content p-4 hidden">
+                    <div class="flex items-center gap-3 mb-4 flex-wrap">
+                        <select id="attendanceMonth" class="px-3 py-2 border rounded-lg text-sm" onchange="loadAttendance()">
+                            <!-- Populated by JS -->
+                        </select>
+                        <button onclick="exportAttendanceCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                            📥 تصدير CSV
+                        </button>
+                    </div>
                     <!-- Legend -->
                     <div class="flex gap-4 mb-4 text-sm flex-wrap">
                         <div class="flex items-center gap-2">
@@ -342,23 +445,136 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="w-8 h-8 bg-blue-100 text-blue-700 rounded flex items-center justify-center font-bold">D</span>
-                            <span>إجازة (اضغط للتغيير)</span>
+                            <span>إجازة</span>
                         </div>
                     </div>
-                    <!-- Stats Summary -->
-                    <div id="attendanceStats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                        <!-- Will be populated by JS -->
-                    </div>
-                    <!-- Attendance Table -->
+                    <!-- Stats -->
+                    <div id="attendanceStats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+                    <!-- Table -->
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs border-collapse min-w-max" id="attendanceTable">
-                            <thead id="attendanceHeader">
-                                <!-- Will be populated by JS -->
-                            </thead>
+                            <thead id="attendanceHeader"></thead>
                             <tbody id="attendanceBody">
                                 <tr><td colspan="32" class="text-center py-8 text-gray-500">اختر الشهر لعرض تقرير الحضور</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- LEAVES SUB-TAB -->
+                <div id="leaves-subtab" class="roster-content p-4 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold">طلبات الإجازة</h3>
+                        <select id="leaveStatusFilter" class="px-3 py-2 border rounded-lg text-sm" onchange="loadLeaveRequests()">
+                            <option value="pending">بانتظار الموافقة</option>
+                            <option value="approved">موافق عليها</option>
+                            <option value="rejected">مرفوضة</option>
+                            <option value="all">الكل</option>
+                        </select>
+                    </div>
+                    <div id="leaveRequestsList" class="space-y-3">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+
+                <!-- TIME TRACKING SUB-TAB -->
+                <div id="timetrack-subtab" class="roster-content p-4 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold">سجل تسجيل الحضور</h3>
+                        <div class="flex gap-2">
+                            <input type="date" id="timeTrackDate" class="px-3 py-2 border rounded-lg text-sm" onchange="loadTimeRecords()">
+                            <button onclick="exportTimeRecordsCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                                📥 تصدير
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Time Records Summary -->
+                    <div id="timeRecordsSummary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div class="bg-green-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-green-600">سجلوا حضور</p>
+                            <p id="clockedInCount" class="text-2xl font-bold text-green-700">0</p>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-blue-600">سجلوا انصراف</p>
+                            <p id="clockedOutCount" class="text-2xl font-bold text-blue-700">0</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-yellow-600">ساعات إضافية</p>
+                            <p id="overtimeHours" class="text-2xl font-bold text-yellow-700">0</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-3 text-center">
+                            <p class="text-xs text-purple-600">إجمالي الساعات</p>
+                            <p id="totalHoursWorked" class="text-2xl font-bold text-purple-700">0</p>
+                        </div>
+                    </div>
+                    <div id="timeRecordsList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">اختر التاريخ لعرض السجلات</p>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS SUB-TAB -->
+                <div id="analytics-subtab" class="roster-content p-4 hidden">
+                    <h3 class="font-bold text-lg mb-4">📊 التحليلات والتقارير</h3>
+
+                    <!-- Date Range Filter -->
+                    <div class="flex items-center gap-3 mb-4 flex-wrap">
+                        <select id="analyticsRange" class="px-3 py-2 border rounded-lg text-sm" onchange="loadAnalytics()">
+                            <option value="week">هذا الأسبوع</option>
+                            <option value="month" selected>هذا الشهر</option>
+                            <option value="quarter">آخر 3 أشهر</option>
+                        </select>
+                        <button onclick="exportAnalyticsCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">📥 تصدير التقرير</button>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-4 text-center">
+                            <p class="text-xs text-blue-600 mb-1">معدل الحضور</p>
+                            <p id="attendanceRate" class="text-3xl font-bold text-blue-700">0%</p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4 text-center">
+                            <p class="text-xs text-green-600 mb-1">إجمالي الورديات</p>
+                            <p id="totalShifts" class="text-3xl font-bold text-green-700">0</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                            <p class="text-xs text-yellow-600 mb-1">ساعات إضافية</p>
+                            <p id="totalOvertime" class="text-3xl font-bold text-yellow-700">0</p>
+                        </div>
+                        <div class="bg-red-50 rounded-lg p-4 text-center">
+                            <p class="text-xs text-red-600 mb-1">طلبات الإجازة</p>
+                            <p id="totalLeaves" class="text-3xl font-bold text-red-700">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Expiring Soon Section -->
+                    <div class="mb-6">
+                        <h4 class="font-bold mb-3 text-red-600">⚠️ تنبيهات الانتهاء (خلال 30 يوم)</h4>
+                        <div id="expiryAlerts" class="grid md:grid-cols-2 gap-3">
+                            <p class="text-gray-500 col-span-2 text-center py-4">جاري التحميل...</p>
+                        </div>
+                    </div>
+
+                    <!-- Driver Performance Table -->
+                    <div>
+                        <h4 class="font-bold mb-3">📈 أداء السائقين</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-3 text-right">السائق</th>
+                                        <th class="p-3 text-center">الورديات المجدولة</th>
+                                        <th class="p-3 text-center">الحضور</th>
+                                        <th class="p-3 text-center">الغياب</th>
+                                        <th class="p-3 text-center">الإجازات</th>
+                                        <th class="p-3 text-center">الساعات الإضافية</th>
+                                        <th class="p-3 text-center">معدل الحضور</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="driverPerformanceBody">
+                                    <tr><td colspan="7" class="text-center py-8 text-gray-500">جاري التحميل...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -386,9 +602,17 @@
                                 <h3 class="text-xl font-bold mb-1">ميزانية الشهر</h3>
                                 <p class="text-purple-200 text-sm" id="currentPeriodLabel">يناير 2026</p>
                             </div>
-                            <button onclick="editCompanyBudget()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="تعديل الميزانية">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="showBudgetHistory()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="سجل التعديلات">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </button>
+                                <button onclick="addBudgetTransaction()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="إضافة للميزانية" data-permission="manage_budget">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                </button>
+                                <button onclick="resetBudgetPeriod()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors" title="إعادة تعيين" data-permission="manage_budget">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="mt-4 grid grid-cols-3 gap-3">
                             <div class="bg-white/10 rounded-lg p-3 text-center">
@@ -396,7 +620,7 @@
                                 <p id="totalBudgetDisplay" class="text-xl font-bold">0 ر.س</p>
                             </div>
                             <div class="bg-white/10 rounded-lg p-3 text-center">
-                                <p class="text-purple-200 text-xs">تم توزيعه</p>
+                                <p class="text-purple-200 text-xs">تم توزيعه للمشرفين</p>
                                 <p id="distributedDisplay" class="text-xl font-bold">0 ر.س</p>
                             </div>
                             <div class="bg-white/10 rounded-lg p-3 text-center">
@@ -406,28 +630,37 @@
                         </div>
                     </div>
 
-                    <!-- Supervisor Balances Summary -->
+                    <!-- Supervisor Balances Summary - Scalable Design -->
                     <div class="mb-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-bold text-gray-700">أرصدة المشرفين</h3>
-                            <button onclick="showTransferHistoryModal()" class="text-sm text-purple-600 hover:text-purple-800">
-                                📋 سجل التحويلات
-                            </button>
+                        <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-bold text-blue-800">💼 توزيع المشرفين</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="showAllSupervisorsModal()" class="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                        👁️ عرض التفاصيل
+                                    </button>
+                                    <button onclick="showTransferHistoryModal()" class="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg">
+                                        📋 سجل التحويلات
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="supervisorsSummary" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <!-- Compact summary - populated by JS -->
+                            </div>
                         </div>
-                        <div id="supervisorBalances" class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <!-- Will be populated by JS -->
-                        </div>
+                        <!-- Hidden - will use modal instead for individual cards -->
+                        <div id="supervisorBalances" class="hidden"></div>
                     </div>
 
-                    <!-- Driver Monthly Summary -->
+                    <!-- Category-Based Expenses Summary -->
                     <div class="bg-gray-50 rounded-xl p-4 mb-4">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-bold text-gray-700">📊 ملخص مصروفات السائقين (هذا الشهر)</h3>
+                            <h3 class="font-bold text-gray-700">📊 ملخص المصروفات حسب الفئة</h3>
                             <button onclick="exportDriverExpensesCSV()" class="text-sm text-green-600 hover:text-green-800">
                                 📥 تصدير
                             </button>
                         </div>
-                        <div id="driverExpensesSummary" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div id="categoryExpensesSummary" class="grid grid-cols-3 md:grid-cols-7 gap-2">
                             <!-- Will be populated by JS -->
                         </div>
                     </div>
@@ -435,12 +668,11 @@
                     <!-- Filters -->
                     <div class="flex flex-wrap gap-3 mb-4">
                         <select id="expenseDateRange" class="px-3 py-2 border rounded-lg text-sm" onchange="loadExpenses()">
+                            <option value="all" selected>كل الفترة</option>
                             <option value="today">اليوم</option>
                             <option value="yesterday">أمس</option>
-                            <option value="last7" selected>آخر 7 أيام</option>
+                            <option value="last7">آخر 7 أيام</option>
                             <option value="last30">آخر 30 يوم</option>
-                            <option value="thisMonth">هذا الشهر</option>
-                            <option value="lastMonth">الشهر الماضي</option>
                         </select>
                         <select id="expenseStatus" class="px-3 py-2 border rounded-lg text-sm" onchange="loadExpenses()">
                             <option value="all">الكل</option>
@@ -453,6 +685,61 @@
                         </select>
                     </div>
                     <div id="expensesList" class="space-y-2">
+                        <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RETURNS TAB (الرجيع) -->
+        <div id="returns-tab" class="tab-content">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="p-4 border-b flex items-center justify-between flex-wrap gap-3">
+                    <h2 class="text-lg font-bold">📦 إدارة الرجيع</h2>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportReturnsCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                            📥 تصدير CSV
+                        </button>
+                        <button onclick="showAddReturnModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                            + تسجيل رجيع جديد
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <!-- Filters -->
+                    <div class="flex flex-wrap gap-3 mb-4">
+                        <select id="returnStatusFilter" onchange="loadReturns()" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">كل الحالات</option>
+                            <option value="pending">قيد المراجعة</option>
+                            <option value="approved">معتمد</option>
+                            <option value="rejected">مرفوض</option>
+                        </select>
+                        <select id="returnDriverFilter" onchange="loadReturns()" class="px-3 py-2 border rounded-lg text-sm">
+                            <option value="all">كل السائقين</option>
+                        </select>
+                        <input type="date" id="returnDateFilter" onchange="loadReturns()" class="px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <!-- Returns Summary Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-center">
+                            <p id="returnsPending" class="text-2xl font-bold text-yellow-600">0</p>
+                            <p class="text-xs text-gray-600">قيد المراجعة</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded-lg border border-green-200 text-center">
+                            <p id="returnsApproved" class="text-2xl font-bold text-green-600">0</p>
+                            <p class="text-xs text-gray-600">معتمد</p>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-lg border border-red-200 text-center">
+                            <p id="returnsRejected" class="text-2xl font-bold text-red-600">0</p>
+                            <p class="text-xs text-gray-600">مرفوض</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 text-center">
+                            <p id="returnsTotal" class="text-2xl font-bold text-blue-600">0</p>
+                            <p class="text-xs text-gray-600">إجمالي اليوم</p>
+                        </div>
+                    </div>
+                    <!-- Returns List -->
+                    <div id="returnsList" class="space-y-3">
                         <p class="text-center text-gray-500 py-8">جاري التحميل...</p>
                     </div>
                 </div>
@@ -649,6 +936,120 @@
         const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentAdmin = null;
+        let currentUserRole = null;
+
+        // ========================================
+        // ROLE-BASED ACCESS CONTROL
+        // ========================================
+        const ROLES = {
+            ADMIN: 'admin',
+            SUPERVISOR: 'supervisor',
+            DRIVER: 'driver'
+        };
+
+        const ROLE_LABELS = {
+            admin: 'مدير النظام',
+            supervisor: 'مشرف',
+            driver: 'سائق'
+        };
+
+        // Permissions matrix: what each role can do
+        const PERMISSIONS = {
+            admin: {
+                // Full access
+                view_dashboard: true,
+                manage_drivers: true,
+                manage_vehicles: true,
+                manage_budget: true,
+                manage_supervisors: true,
+                approve_expenses: true,
+                manage_roster: true,
+                view_reports: true,
+                view_audit_log: true,
+                delete_records: true,
+                manage_settings: true
+            },
+            supervisor: {
+                // Moderate access - own team
+                view_dashboard: true,
+                manage_drivers: false,      // Can only view
+                manage_vehicles: false,     // Can only view
+                manage_budget: false,       // Can view own allocation
+                manage_supervisors: false,
+                approve_expenses: true,     // Can approve for own team
+                manage_roster: true,        // Own team roster
+                view_reports: true,         // Own team reports
+                view_audit_log: false,
+                delete_records: false,
+                manage_settings: false
+            },
+            driver: {
+                // Limited access - own data only
+                view_dashboard: false,
+                manage_drivers: false,
+                manage_vehicles: false,
+                manage_budget: false,
+                manage_supervisors: false,
+                approve_expenses: false,
+                manage_roster: false,
+                view_reports: false,
+                view_audit_log: false,
+                delete_records: false,
+                manage_settings: false
+            }
+        };
+
+        // Check if current user has a specific permission
+        function hasPermission(permission) {
+            if (!currentUserRole || !PERMISSIONS[currentUserRole]) return false;
+            return PERMISSIONS[currentUserRole][permission] === true;
+        }
+
+        // Apply role-based visibility to UI elements
+        function applyRoleBasedUI() {
+            const role = currentUserRole;
+
+            // Show role badge next to user name
+            const roleBadge = `<span class="text-xs px-2 py-0.5 rounded-full ${
+                role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                role === 'supervisor' ? 'bg-blue-100 text-blue-700' :
+                'bg-gray-100 text-gray-700'
+            }">${ROLE_LABELS[role] || role}</span>`;
+
+            document.getElementById('adminName').innerHTML = `${currentAdmin.full_name} ${roleBadge}`;
+
+            // Hide elements that require specific permissions
+            document.querySelectorAll('[data-permission]').forEach(el => {
+                const requiredPermission = el.getAttribute('data-permission');
+                if (!hasPermission(requiredPermission)) {
+                    el.style.display = 'none';
+                }
+            });
+
+            // Hide tabs based on role
+            if (!hasPermission('manage_drivers')) {
+                // Keep drivers tab visible but disable edit actions
+                document.querySelectorAll('.driver-edit-btn, .driver-delete-btn').forEach(el => el.style.display = 'none');
+            }
+
+            if (!hasPermission('manage_budget')) {
+                // Hide budget management buttons
+                document.querySelectorAll('.budget-edit-btn').forEach(el => el.style.display = 'none');
+            }
+
+            if (!hasPermission('view_audit_log')) {
+                // Hide audit log button
+                const auditBtn = document.querySelector('[onclick="showAuditLog()"]');
+                if (auditBtn) auditBtn.style.display = 'none';
+            }
+
+            if (!hasPermission('delete_records')) {
+                // Hide all delete buttons
+                document.querySelectorAll('[onclick*="delete"], .delete-btn').forEach(el => el.style.display = 'none');
+            }
+
+            console.log(`User role: ${role}, permissions applied`);
+        }
 
         // ========================================
         // INITIALIZATION
@@ -660,22 +1061,25 @@
                 return;
             }
 
-            // Verify admin role
-            const { data: admin } = await mySupabase
+            // Get user with any allowed role (admin or supervisor)
+            const { data: user } = await mySupabase
                 .from('drivers')
                 .select('*')
                 .eq('email', session.user.email)
-                .eq('role', 'admin')
+                .in('role', ['admin', 'supervisor'])
                 .single();
 
-            if (!admin) {
-                alert('غير مصرح لك بالوصول إلى هذه الصفحة');
+            if (!user) {
+                alert('غير مصرح لك بالوصول إلى هذه الصفحة. يجب أن تكون مدير أو مشرف.');
                 window.location.href = 'login.html';
                 return;
             }
 
-            currentAdmin = admin;
-            document.getElementById('adminName').textContent = admin.full_name;
+            currentAdmin = user;
+            currentUserRole = user.role;
+
+            // Apply role-based UI restrictions
+            applyRoleBasedUI();
 
             // Load initial data
             loadStats();
@@ -1494,16 +1898,165 @@
         }
 
         // ========================================
-        // AUDIT LOG
+        // AUDIT LOG & TRANSACTION IDS
         // ========================================
+
+        // Generate unique transaction ID: TXN-YYYYMMDD-HHMMSS-XXXX
+        function generateTransactionId() {
+            const now = new Date();
+            const datePart = now.toISOString().slice(0,10).replace(/-/g, '');
+            const timePart = now.toTimeString().slice(0,8).replace(/:/g, '');
+            const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+            return `TXN-${datePart}-${timePart}-${randomPart}`;
+        }
+
         async function logAction(action, targetType, targetId, details) {
-            await mySupabase.from('audit_log').insert([{
+            const transactionId = generateTransactionId();
+
+            const { data, error } = await mySupabase.from('audit_log').insert([{
                 admin_email: currentAdmin.email,
                 action: action,
                 target_type: targetType,
                 target_id: targetId,
-                details: details
-            }]);
+                details: { ...details, transaction_id: transactionId },
+                transaction_id: transactionId
+            }]).select();
+
+            if (!error) {
+                // Show transaction ID notification briefly
+                showTransactionNotification(transactionId, action);
+            }
+
+            return transactionId;
+        }
+
+        function showTransactionNotification(transactionId, action) {
+            const actionLabels = {
+                'create_driver': 'إضافة سائق',
+                'update_driver': 'تحديث سائق',
+                'delete_driver': 'حذف سائق',
+                'create_vehicle': 'إضافة مركبة',
+                'update_vehicle': 'تحديث مركبة',
+                'delete_vehicle': 'حذف مركبة',
+                'approve_expense': 'اعتماد مصروف',
+                'reject_expense': 'رفض مصروف',
+                'add_transfer': 'إضافة تحويل',
+                'modify_transfer': 'تعديل تحويل',
+                'delete_transfer': 'حذف تحويل',
+                'update_budget': 'تحديث ميزانية',
+                'create_return': 'تسجيل رجيع',
+                'approve_return': 'اعتماد رجيع',
+                'reject_return': 'رفض رجيع',
+                'reset_budget': 'إعادة تعيين ميزانية'
+            };
+
+            const label = actionLabels[action] || action;
+
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 left-4 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-pulse';
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">✓</span>
+                    <div>
+                        <p class="font-semibold text-sm">${label}</p>
+                        <p class="text-xs opacity-90 font-mono">${transactionId}</p>
+                    </div>
+                    <button onclick="copyToClipboard('${transactionId}'); this.parentElement.parentElement.remove();" class="ml-2 p-1 hover:bg-white/20 rounded" title="نسخ">
+                        📋
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+        }
+
+        // View Audit Log / Transaction History
+        async function showAuditLog() {
+            const { data: logs, error } = await mySupabase
+                .from('audit_log')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (error) {
+                console.error('Error loading audit log:', error);
+                return;
+            }
+
+            const actionLabels = {
+                'create_driver': '➕ إضافة سائق',
+                'update_driver': '✏️ تحديث سائق',
+                'delete_driver': '🗑️ حذف سائق',
+                'create_vehicle': '🚛 إضافة مركبة',
+                'update_vehicle': '✏️ تحديث مركبة',
+                'delete_vehicle': '🗑️ حذف مركبة',
+                'approve_expense': '✅ اعتماد مصروف',
+                'reject_expense': '❌ رفض مصروف',
+                'add_transfer': '💰 إضافة تحويل',
+                'modify_transfer': '✏️ تعديل تحويل',
+                'delete_transfer': '🗑️ حذف تحويل',
+                'update_budget': '💵 تحديث ميزانية',
+                'create_return': '📦 تسجيل رجيع',
+                'approve_return': '✅ اعتماد رجيع',
+                'reject_return': '❌ رفض رجيع',
+                'reset_budget': '🔄 إعادة تعيين'
+            };
+
+            const tableRows = (logs || []).map(log => {
+                const txnId = log.transaction_id || log.details?.transaction_id || '-';
+                const date = new Date(log.created_at).toLocaleString('ar-SA');
+                const label = actionLabels[log.action] || log.action;
+
+                return `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 text-xs font-mono text-blue-600">${txnId}</td>
+                        <td class="p-2 text-xs">${date}</td>
+                        <td class="p-2 text-sm">${label}</td>
+                        <td class="p-2 text-xs text-gray-500">${log.admin_email}</td>
+                        <td class="p-2 text-xs text-gray-600">${log.target_type}: ${log.target_id?.slice(0,8) || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'auditLogModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <div class="p-4 border-b flex items-center justify-between bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                        <h3 class="text-lg font-bold">📋 سجل المعاملات</h3>
+                        <button onclick="document.getElementById('auditLogModal').remove()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+                    </div>
+                    <div class="p-4 overflow-auto flex-1">
+                        <table class="w-full text-sm" dir="rtl">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="p-2 text-right">رقم المعاملة</th>
+                                    <th class="p-2 text-right">التاريخ</th>
+                                    <th class="p-2 text-right">العملية</th>
+                                    <th class="p-2 text-right">المستخدم</th>
+                                    <th class="p-2 text-right">الهدف</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows || '<tr><td colspan="5" class="p-4 text-center text-gray-500">لا توجد معاملات</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-4 border-t bg-gray-50 flex justify-end">
+                        <button onclick="document.getElementById('auditLogModal').remove()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg">
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
 
         // ========================================
@@ -1646,6 +2199,9 @@
                     initBudgetMonthSelector();
                     loadBudgetPeriod();
                     loadExpenses();
+                }
+                if (this.dataset.tab === 'returns') {
+                    loadReturns();
                 }
             });
         });
@@ -1933,6 +2489,627 @@
             link.download = `attendance_${startDate}_${endDate}.csv`;
             link.click();
         }
+
+        // ========================================
+        // ROSTER MANAGEMENT FUNCTIONS
+        // ========================================
+        let currentWeekStart = getWeekStart(new Date());
+        let shiftTemplates = [];
+        let scheduledShifts = [];
+        let availableVehicles = [];
+
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function switchRosterTab(tabName) {
+            document.querySelectorAll('.roster-subtab').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('bg-gray-100');
+            });
+            document.querySelector(`[data-subtab="${tabName}"]`).classList.add('active');
+            document.querySelector(`[data-subtab="${tabName}"]`).classList.remove('bg-gray-100');
+
+            document.querySelectorAll('.roster-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`${tabName}-subtab`).classList.remove('hidden');
+
+            if (tabName === 'schedule') loadWeeklySchedule();
+            else if (tabName === 'attendance') { initAttendanceMonthSelector(); loadAttendance(); }
+            else if (tabName === 'leaves') loadLeaveRequests();
+            else if (tabName === 'timetrack') loadTimeRecords();
+            else if (tabName === 'analytics') loadAnalytics();
+        }
+
+        function changeWeek(direction) {
+            currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+            loadWeeklySchedule();
+        }
+
+        async function loadShiftTemplates() {
+            const { data } = await mySupabase.from('shift_templates').select('*').eq('is_active', true).order('start_time');
+            shiftTemplates = data || [];
+            const legendHtml = shiftTemplates.map(t => `
+                <div class="flex items-center gap-2 px-3 py-1 rounded-full text-sm" style="background: ${t.color}20; color: ${t.color}">
+                    <span class="w-3 h-3 rounded-full" style="background: ${t.color}"></span>
+                    <span>${t.name}</span>
+                    <span class="text-xs opacity-70">(${t.start_time?.slice(0,5)}-${t.end_time?.slice(0,5)})</span>
+                </div>
+            `).join('');
+            document.getElementById('shiftTemplatesLegend').innerHTML = legendHtml || '<span class="text-gray-400">لا توجد قوالب</span>';
+
+            // Load available vehicles
+            const { data: vehicles } = await mySupabase.from('vehicles').select('id, van_code, plate_number').in('status', ['active', 'idle']).order('van_code');
+            availableVehicles = vehicles || [];
+        }
+
+        async function loadWeeklySchedule() {
+            await loadShiftTemplates();
+            const weekEnd = new Date(currentWeekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+
+            const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+            document.getElementById('currentWeekLabel').textContent = `${currentWeekStart.getDate()} ${monthNames[currentWeekStart.getMonth()]} - ${weekEnd.getDate()} ${monthNames[weekEnd.getMonth()]} ${weekEnd.getFullYear()}`;
+
+            const { data: drivers } = await mySupabase.from('drivers').select('id, full_name, driver_code').neq('role', 'admin').eq('is_active', true).order('full_name');
+            const startStr = currentWeekStart.toISOString().split('T')[0];
+            const endStr = weekEnd.toISOString().split('T')[0];
+            const { data: shifts } = await mySupabase.from('scheduled_shifts').select('*, shift_templates(*)').gte('shift_date', startStr).lte('shift_date', endStr);
+            scheduledShifts = shifts || [];
+
+            // Fetch vehicle assignments for the week
+            const shiftIds = scheduledShifts.map(s => s.id);
+            let vehicleAssignments = [];
+            if (shiftIds.length > 0) {
+                const { data: assignments } = await mySupabase.from('vehicle_assignments').select('shift_id, vehicles(van_code)').in('shift_id', shiftIds);
+                vehicleAssignments = assignments || [];
+            }
+
+            const dates = [];
+            const dayNames = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(currentWeekStart);
+                d.setDate(d.getDate() + i);
+                dates.push(d);
+            }
+
+            const headerHtml = `<tr class="bg-gray-100"><th class="border p-3 text-right min-w-[150px]">السائق</th>${dates.map(d => {
+                const isToday = d.toDateString() === new Date().toDateString();
+                const isFriday = d.getDay() === 5;
+                return `<th class="border p-2 text-center ${isToday ? 'bg-blue-100' : ''} ${isFriday ? 'bg-blue-50' : ''}" style="min-width:100px"><div class="text-xs text-gray-500">${dayNames[d.getDay()]}</div><div class="font-bold">${d.getDate()}</div></th>`;
+            }).join('')}</tr>`;
+            document.getElementById('scheduleHeader').innerHTML = headerHtml;
+
+            if (!drivers || drivers.length === 0) {
+                document.getElementById('scheduleBody').innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">لا يوجد سائقين</td></tr>';
+                return;
+            }
+
+            const bodyHtml = drivers.map(driver => {
+                const cells = dates.map(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const shift = scheduledShifts.find(s => s.driver_id === driver.id && s.shift_date === dateStr);
+                    const isToday = date.toDateString() === new Date().toDateString();
+                    const isFriday = date.getDay() === 5;
+
+                    if (shift) {
+                        const template = shift.shift_templates || shiftTemplates.find(t => t.id === shift.template_id);
+                        const color = template?.color || '#6B7280';
+                        const vehicleAssignment = vehicleAssignments.find(a => a.shift_id === shift.id);
+                        const vehicleLabel = vehicleAssignment?.vehicles?.van_code ? `<div class="text-xs mt-1 bg-white/50 rounded px-1">🚐 ${vehicleAssignment.vehicles.van_code}</div>` : '';
+                        return `<td class="border p-1 text-center ${isToday ? 'bg-blue-50' : ''}" onclick="editShift('${shift.id}')"><div class="px-2 py-1 rounded text-xs font-semibold cursor-pointer" style="background:${color}30;color:${color}">${template?.name || 'وردية'}<div class="text-xs opacity-70">${shift.start_time?.slice(0,5)}-${shift.end_time?.slice(0,5)}</div>${vehicleLabel}</div></td>`;
+                    } else {
+                        return `<td class="border p-1 text-center ${isToday ? 'bg-blue-50' : ''} ${isFriday ? 'bg-gray-50' : ''} hover:bg-gray-100 cursor-pointer" onclick="quickAddShift('${driver.id}','${dateStr}')"><span class="text-gray-300 text-lg">+</span></td>`;
+                    }
+                }).join('');
+                return `<tr class="hover:bg-gray-50"><td class="border p-2 font-semibold"><div>${driver.full_name}</div><div class="text-xs text-gray-400">${driver.driver_code}</div></td>${cells}</tr>`;
+            }).join('');
+
+            document.getElementById('scheduleBody').innerHTML = bodyHtml;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('scheduledToday').textContent = scheduledShifts.filter(s => s.shift_date === today).length;
+        }
+
+        function quickAddShift(driverId, dateStr) {
+            if (shiftTemplates.length === 0) { alert('يرجى إنشاء قوالب ورديات أولاً'); return; }
+            const vehicleOptions = availableVehicles.map(v => `<option value="${v.id}">${v.van_code} - ${v.plate_number}</option>`).join('');
+            const modal = document.createElement('div');
+            modal.id = 'quickShiftModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `<div class="bg-white rounded-xl w-full max-w-sm"><div class="p-4 border-b"><h3 class="font-bold">إضافة وردية - ${dateStr}</h3></div><div class="p-4 space-y-3"><div><label class="block text-sm font-semibold mb-1">نوع الوردية</label><div class="space-y-2">${shiftTemplates.map(t => `<label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:opacity-80" style="background:${t.color}20;border:2px solid ${t.color}"><input type="radio" name="quickTemplate" value="${t.id}" data-start="${t.start_time}" data-end="${t.end_time}" class="accent-blue-600"><span style="color:${t.color}" class="font-bold">${t.name}</span><span class="text-xs text-gray-500">(${t.start_time?.slice(0,5)}-${t.end_time?.slice(0,5)})</span></label>`).join('')}</div></div><div><label class="block text-sm font-semibold mb-1">المركبة (اختياري)</label><select id="quickShiftVehicle" class="w-full px-3 py-2 border rounded-lg"><option value="">-- بدون مركبة --</option>${vehicleOptions}</select></div></div><div class="p-4 border-t flex gap-2"><button onclick="document.getElementById('quickShiftModal').remove()" class="flex-1 py-2 bg-gray-200 rounded-lg">إلغاء</button><button onclick="saveQuickShift('${driverId}','${dateStr}')" class="flex-1 py-2 bg-blue-600 text-white rounded-lg">حفظ</button></div></div>`;
+            document.body.appendChild(modal);
+            // Select first template by default
+            const firstRadio = modal.querySelector('input[name="quickTemplate"]');
+            if (firstRadio) firstRadio.checked = true;
+        }
+
+        async function saveQuickShift(driverId, dateStr) {
+            const selectedTemplate = document.querySelector('input[name="quickTemplate"]:checked');
+            if (!selectedTemplate) { alert('يرجى اختيار نوع الوردية'); return; }
+            const templateId = selectedTemplate.value;
+            const startTime = selectedTemplate.dataset.start;
+            const endTime = selectedTemplate.dataset.end;
+            const vehicleId = document.getElementById('quickShiftVehicle').value || null;
+
+            const { data: shiftData, error } = await mySupabase.from('scheduled_shifts').insert([{ driver_id: driverId, template_id: templateId, shift_date: dateStr, start_time: startTime, end_time: endTime, status: 'scheduled' }]).select().single();
+            if (error) { alert('خطأ: ' + error.message); return; }
+
+            // Create vehicle assignment if selected
+            if (vehicleId && shiftData) {
+                await mySupabase.from('vehicle_assignments').insert([{ shift_id: shiftData.id, vehicle_id: vehicleId, driver_id: driverId, assignment_date: dateStr }]);
+            }
+
+            document.getElementById('quickShiftModal')?.remove();
+            loadWeeklySchedule();
+        }
+
+        async function editShift(shiftId) {
+            const shift = scheduledShifts.find(s => s.id === shiftId);
+            if (!shift) return;
+
+            // Fetch current vehicle assignment
+            const { data: assignment } = await mySupabase.from('vehicle_assignments').select('vehicle_id').eq('shift_id', shiftId).maybeSingle();
+            const currentVehicleId = assignment?.vehicle_id || '';
+
+            const vehicleOptions = availableVehicles.map(v => `<option value="${v.id}" ${v.id === currentVehicleId ? 'selected' : ''}>${v.van_code} - ${v.plate_number}</option>`).join('');
+
+            const modal = document.createElement('div');
+            modal.id = 'editShiftModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `<div class="bg-white rounded-xl w-full max-w-sm"><div class="p-4 border-b flex items-center justify-between"><h3 class="font-bold">تعديل الوردية</h3><button onclick="document.getElementById('editShiftModal').remove()" class="text-gray-500">✕</button></div><div class="p-4 space-y-3"><div><label class="block text-sm font-semibold mb-1">القالب</label><select id="editShiftTemplate" class="w-full px-3 py-2 border rounded-lg">${shiftTemplates.map(t => `<option value="${t.id}" ${t.id === shift.template_id ? 'selected' : ''}>${t.name}</option>`).join('')}</select></div><div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-semibold mb-1">من</label><input type="time" id="editShiftStart" value="${shift.start_time?.slice(0,5)}" class="w-full px-3 py-2 border rounded-lg"></div><div><label class="block text-sm font-semibold mb-1">إلى</label><input type="time" id="editShiftEnd" value="${shift.end_time?.slice(0,5)}" class="w-full px-3 py-2 border rounded-lg"></div></div><div><label class="block text-sm font-semibold mb-1">المركبة المخصصة</label><select id="editShiftVehicle" class="w-full px-3 py-2 border rounded-lg"><option value="">-- بدون مركبة --</option>${vehicleOptions}</select></div><div><label class="block text-sm font-semibold mb-1">ملاحظات</label><textarea id="editShiftNotes" rows="2" class="w-full px-3 py-2 border rounded-lg">${shift.notes || ''}</textarea></div></div><div class="p-4 border-t flex gap-2"><button onclick="deleteShift('${shiftId}')" class="px-4 py-2 bg-red-500 text-white rounded-lg">حذف</button><button onclick="document.getElementById('editShiftModal').remove()" class="flex-1 py-2 bg-gray-200 rounded-lg">إلغاء</button><button onclick="updateShift('${shiftId}', '${shift.driver_id}', '${shift.shift_date}')" class="flex-1 py-2 bg-blue-600 text-white rounded-lg">حفظ</button></div></div>`;
+            document.body.appendChild(modal);
+        }
+
+        async function updateShift(shiftId, driverId, shiftDate) {
+            const vehicleId = document.getElementById('editShiftVehicle').value || null;
+
+            const { error } = await mySupabase.from('scheduled_shifts').update({ template_id: document.getElementById('editShiftTemplate').value, start_time: document.getElementById('editShiftStart').value, end_time: document.getElementById('editShiftEnd').value, notes: document.getElementById('editShiftNotes').value }).eq('id', shiftId);
+            if (error) { alert('خطأ: ' + error.message); return; }
+
+            // Update vehicle assignment
+            await mySupabase.from('vehicle_assignments').delete().eq('shift_id', shiftId);
+            if (vehicleId) {
+                await mySupabase.from('vehicle_assignments').insert([{ shift_id: shiftId, vehicle_id: vehicleId, driver_id: driverId, assignment_date: shiftDate }]);
+            }
+
+            document.getElementById('editShiftModal')?.remove();
+            loadWeeklySchedule();
+        }
+
+        async function deleteShift(shiftId) {
+            if (!hasPermission('delete_records')) {
+                alert('ليس لديك صلاحية لحذف السجلات');
+                return;
+            }
+            if (!confirm('هل تريد حذف هذه الوردية؟')) return;
+            await mySupabase.from('scheduled_shifts').delete().eq('id', shiftId);
+            document.getElementById('editShiftModal')?.remove();
+            loadWeeklySchedule();
+        }
+
+        function showAddShiftModal() {
+            const modal = document.createElement('div');
+            modal.id = 'addShiftModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `<div class="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"><div class="p-4 border-b flex items-center justify-between"><h3 class="text-lg font-bold">جدولة ورديات</h3><button onclick="document.getElementById('addShiftModal').remove()" class="text-gray-500">✕</button></div><div class="p-4 space-y-4"><div><label class="block text-sm font-semibold mb-1">اختر السائقين</label><div id="driverCheckboxes" class="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">جاري التحميل...</div></div><div><label class="block text-sm font-semibold mb-1">قالب الوردية</label><select id="bulkShiftTemplate" class="w-full px-3 py-2 border rounded-lg">${shiftTemplates.map(t => `<option value="${t.id}" data-start="${t.start_time}" data-end="${t.end_time}">${t.name}</option>`).join('')}</select></div><div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-semibold mb-1">من تاريخ</label><input type="date" id="bulkShiftStartDate" class="w-full px-3 py-2 border rounded-lg" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="block text-sm font-semibold mb-1">إلى تاريخ</label><input type="date" id="bulkShiftEndDate" class="w-full px-3 py-2 border rounded-lg" value="${new Date().toISOString().split('T')[0]}"></div></div><div><label class="block text-sm font-semibold mb-2">أيام الأسبوع</label><div class="flex flex-wrap gap-2"><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="0" checked> أحد</label><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="1" checked> إثنين</label><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="2" checked> ثلاثاء</label><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="3" checked> أربعاء</label><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="4" checked> خميس</label><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="5"> جمعة</label><label class="flex items-center gap-1"><input type="checkbox" name="weekday" value="6" checked> سبت</label></div></div></div><div class="p-4 border-t flex gap-2"><button onclick="document.getElementById('addShiftModal').remove()" class="flex-1 py-2 bg-gray-200 rounded-lg">إلغاء</button><button onclick="saveBulkShifts()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg">حفظ الجدول</button></div></div>`;
+            document.body.appendChild(modal);
+            loadDriverCheckboxes();
+        }
+
+        async function loadDriverCheckboxes() {
+            const { data: drivers } = await mySupabase.from('drivers').select('id, full_name, driver_code').neq('role', 'admin').eq('is_active', true).order('full_name');
+            document.getElementById('driverCheckboxes').innerHTML = (drivers || []).map(d => `<label class="flex items-center gap-2 p-1 hover:bg-gray-50 rounded"><input type="checkbox" name="driver" value="${d.id}"><span>${d.full_name}</span><span class="text-xs text-gray-400">${d.driver_code}</span></label>`).join('') || '<p class="text-gray-500">لا يوجد سائقين</p>';
+        }
+
+        async function saveBulkShifts() {
+            const selectedDrivers = Array.from(document.querySelectorAll('input[name="driver"]:checked')).map(cb => cb.value);
+            const selectedDays = Array.from(document.querySelectorAll('input[name="weekday"]:checked')).map(cb => parseInt(cb.value));
+            const templateId = document.getElementById('bulkShiftTemplate').value;
+            const templateSelect = document.getElementById('bulkShiftTemplate');
+            const startTime = templateSelect.options[templateSelect.selectedIndex].dataset.start;
+            const endTime = templateSelect.options[templateSelect.selectedIndex].dataset.end;
+            const startDate = new Date(document.getElementById('bulkShiftStartDate').value);
+            const endDate = new Date(document.getElementById('bulkShiftEndDate').value);
+
+            if (selectedDrivers.length === 0) { alert('يرجى اختيار سائق واحد على الأقل'); return; }
+
+            const shiftsToInsert = [];
+            let current = new Date(startDate);
+            while (current <= endDate) {
+                if (selectedDays.includes(current.getDay())) {
+                    for (const driverId of selectedDrivers) {
+                        shiftsToInsert.push({ driver_id: driverId, template_id: templateId, shift_date: current.toISOString().split('T')[0], start_time: startTime, end_time: endTime, status: 'scheduled' });
+                    }
+                }
+                current.setDate(current.getDate() + 1);
+            }
+
+            if (shiftsToInsert.length === 0) { alert('لا توجد ورديات للإضافة'); return; }
+            const { error } = await mySupabase.from('scheduled_shifts').insert(shiftsToInsert);
+            if (error) { alert('خطأ: ' + error.message); return; }
+            document.getElementById('addShiftModal')?.remove();
+            alert(`تم إضافة ${shiftsToInsert.length} وردية بنجاح`);
+            loadWeeklySchedule();
+        }
+
+        function showShiftTemplatesModal() {
+            const modal = document.createElement('div');
+            modal.id = 'templatesModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `<div class="bg-white rounded-xl w-full max-w-md"><div class="p-4 border-b flex items-center justify-between"><h3 class="font-bold">قوالب الورديات</h3><button onclick="document.getElementById('templatesModal').remove()" class="text-gray-500">✕</button></div><div id="templatesList" class="p-4 space-y-2 max-h-60 overflow-y-auto">${shiftTemplates.map(t => `<div class="flex items-center justify-between p-3 rounded-lg" style="background:${t.color}20"><div><p class="font-bold" style="color:${t.color}">${t.name}</p><p class="text-xs text-gray-500">${t.start_time?.slice(0,5)}-${t.end_time?.slice(0,5)}</p></div><button onclick="deleteTemplate('${t.id}')" class="text-red-500 hover:text-red-700">🗑️</button></div>`).join('') || '<p class="text-gray-500">لا توجد قوالب</p>'}</div><div class="p-4 border-t space-y-3"><h4 class="font-semibold">إضافة قالب جديد</h4><input type="text" id="newTemplateName" placeholder="اسم القالب" class="w-full px-3 py-2 border rounded-lg"><div class="grid grid-cols-2 gap-2"><input type="time" id="newTemplateStart" class="px-3 py-2 border rounded-lg" value="08:00"><input type="time" id="newTemplateEnd" class="px-3 py-2 border rounded-lg" value="16:00"></div><input type="color" id="newTemplateColor" value="#3B82F6" class="w-full h-10 rounded-lg cursor-pointer"><button onclick="addTemplate()" class="w-full py-2 bg-blue-600 text-white rounded-lg">إضافة</button></div></div>`;
+            document.body.appendChild(modal);
+        }
+
+        async function addTemplate() {
+            const name = document.getElementById('newTemplateName').value;
+            if (!name) { alert('يرجى إدخال اسم القالب'); return; }
+            const { error } = await mySupabase.from('shift_templates').insert([{ name: name, start_time: document.getElementById('newTemplateStart').value, end_time: document.getElementById('newTemplateEnd').value, color: document.getElementById('newTemplateColor').value }]);
+            if (error) { alert('خطأ: ' + error.message); return; }
+            document.getElementById('templatesModal')?.remove();
+            await loadShiftTemplates();
+            showShiftTemplatesModal();
+        }
+
+        async function deleteTemplate(templateId) {
+            if (!hasPermission('delete_records')) {
+                alert('ليس لديك صلاحية لحذف السجلات');
+                return;
+            }
+            if (!confirm('هل تريد حذف هذا القالب؟')) return;
+            await mySupabase.from('shift_templates').delete().eq('id', templateId);
+            document.getElementById('templatesModal')?.remove();
+            await loadShiftTemplates();
+            showShiftTemplatesModal();
+        }
+
+        // LEAVE REQUESTS
+        async function loadLeaveRequests() {
+            const status = document.getElementById('leaveStatusFilter').value;
+            let query = mySupabase.from('leave_requests').select('*, drivers(full_name, driver_code)').order('created_at', { ascending: false });
+            if (status !== 'all') query = query.eq('status', status);
+            const { data: requests } = await query;
+
+            if (!requests || requests.length === 0) {
+                document.getElementById('leaveRequestsList').innerHTML = '<p class="text-center text-gray-500 py-8">لا توجد طلبات</p>';
+                return;
+            }
+
+            const leaveTypes = { 'annual': 'إجازة سنوية', 'sick': 'إجازة مرضية', 'emergency': 'إجازة طارئة', 'unpaid': 'إجازة بدون راتب' };
+            const statusColors = { 'pending': 'bg-yellow-100 text-yellow-700', 'approved': 'bg-green-100 text-green-700', 'rejected': 'bg-red-100 text-red-700' };
+            const statusLabels = { 'pending': 'بانتظار الموافقة', 'approved': 'موافق عليه', 'rejected': 'مرفوض' };
+
+            document.getElementById('leaveRequestsList').innerHTML = requests.map(r => `<div class="border rounded-lg p-4"><div class="flex items-center justify-between mb-2"><div><p class="font-bold">${r.drivers?.full_name || 'غير معروف'}</p><p class="text-xs text-gray-500">${r.drivers?.driver_code || ''}</p></div><span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColors[r.status]}">${statusLabels[r.status]}</span></div><div class="grid grid-cols-2 gap-2 text-sm mb-2"><div><span class="text-gray-500">النوع:</span> <span class="font-semibold">${leaveTypes[r.leave_type] || r.leave_type}</span></div><div><span class="text-gray-500">المدة:</span> <span class="font-semibold">${r.start_date} إلى ${r.end_date}</span></div></div>${r.reason ? `<p class="text-sm text-gray-600 mb-2">${r.reason}</p>` : ''}${r.status === 'pending' ? `<div class="flex gap-2 mt-3"><button onclick="updateLeaveRequest('${r.id}','approved')" class="flex-1 py-2 bg-green-500 text-white rounded-lg text-sm">✓ موافقة</button><button onclick="updateLeaveRequest('${r.id}','rejected')" class="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm">✕ رفض</button></div>` : ''}</div>`).join('');
+        }
+
+        async function updateLeaveRequest(requestId, newStatus) {
+            const { error } = await mySupabase.from('leave_requests').update({ status: newStatus, reviewed_at: new Date().toISOString() }).eq('id', requestId);
+            if (error) { alert('خطأ: ' + error.message); return; }
+            loadLeaveRequests();
+        }
+
+        // TIME RECORDS
+        async function loadTimeRecords() {
+            const dateInput = document.getElementById('timeTrackDate');
+            if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+
+            const { data: records } = await mySupabase.from('time_records').select('*, drivers(full_name, driver_code)').gte('clock_in', dateInput.value + 'T00:00:00').lte('clock_in', dateInput.value + 'T23:59:59').order('clock_in', { ascending: false });
+
+            let clockedIn = 0, clockedOut = 0, totalHours = 0, overtime = 0;
+            (records || []).forEach(r => { if (r.clock_in) clockedIn++; if (r.clock_out) clockedOut++; totalHours += Number(r.total_hours || 0); overtime += Number(r.overtime_hours || 0); });
+
+            document.getElementById('clockedInCount').textContent = clockedIn;
+            document.getElementById('clockedOutCount').textContent = clockedOut;
+            document.getElementById('totalHoursWorked').textContent = totalHours.toFixed(1);
+            document.getElementById('overtimeHours').textContent = overtime.toFixed(1);
+
+            if (!records || records.length === 0) {
+                document.getElementById('timeRecordsList').innerHTML = '<p class="text-center text-gray-500 py-8">لا توجد سجلات لهذا اليوم</p>';
+                return;
+            }
+
+            document.getElementById('timeRecordsList').innerHTML = records.map(r => {
+                const clockIn = r.clock_in ? new Date(r.clock_in).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : '--';
+                const clockOut = r.clock_out ? new Date(r.clock_out).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : '--';
+                return `<div class="flex items-center justify-between p-3 border rounded-lg"><div><p class="font-bold">${r.drivers?.full_name || 'غير معروف'}</p><p class="text-xs text-gray-500">${r.drivers?.driver_code || ''}</p></div><div class="text-center"><p class="text-green-600 font-semibold">🕐 ${clockIn}</p><p class="text-xs text-gray-400">حضور</p></div><div class="text-center"><p class="text-blue-600 font-semibold">🕐 ${clockOut}</p><p class="text-xs text-gray-400">انصراف</p></div><div class="text-center"><p class="font-bold">${r.total_hours || 0} س</p>${r.overtime_hours > 0 ? `<p class="text-xs text-yellow-600">+${r.overtime_hours} إضافي</p>` : ''}</div></div>`;
+            }).join('');
+        }
+
+        function exportTimeRecordsCSV() {
+            alert('سيتم تصدير السجلات');
+        }
+
+        // ========================================
+        // ANALYTICS & COMPLIANCE
+        // ========================================
+        async function loadAnalytics() {
+            const range = document.getElementById('analyticsRange').value;
+            const today = new Date();
+            let startDate, endDate = today.toISOString().split('T')[0];
+
+            if (range === 'week') {
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                startDate = weekStart.toISOString().split('T')[0];
+            } else if (range === 'month') {
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            } else {
+                startDate = new Date(today.getFullYear(), today.getMonth() - 3, 1).toISOString().split('T')[0];
+            }
+
+            // Fetch drivers
+            const { data: drivers } = await mySupabase.from('drivers').select('id, full_name, driver_code, license_expiry').neq('role', 'admin').eq('is_active', true);
+
+            // Fetch scheduled shifts
+            const { data: shifts } = await mySupabase.from('scheduled_shifts').select('id, driver_id, shift_date, status').gte('shift_date', startDate).lte('shift_date', endDate);
+
+            // Fetch time records
+            const { data: timeRecords } = await mySupabase.from('time_records').select('driver_id, total_hours, overtime_hours').gte('clock_in', startDate + 'T00:00:00').lte('clock_in', endDate + 'T23:59:59');
+
+            // Fetch approved leaves
+            const { data: leaves } = await mySupabase.from('leave_requests').select('driver_id, start_date, end_date').eq('status', 'approved').gte('start_date', startDate).lte('end_date', endDate);
+
+            // Fetch vehicles expiring soon
+            const thirtyDaysFromNow = new Date(today);
+            thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+            const expiryThreshold = thirtyDaysFromNow.toISOString().split('T')[0];
+
+            const { data: expiringVehicles } = await mySupabase.from('vehicles').select('van_code, plate_number, registration_expiry, insurance_expiry').or(`registration_expiry.lte.${expiryThreshold},insurance_expiry.lte.${expiryThreshold}`);
+
+            // Calculate totals
+            const totalShiftsCount = (shifts || []).length;
+            const completedShifts = (shifts || []).filter(s => s.status === 'completed').length;
+            const totalOvertimeHours = (timeRecords || []).reduce((sum, r) => sum + Number(r.overtime_hours || 0), 0);
+            const totalLeavesCount = (leaves || []).length;
+            const attendanceRatePercent = totalShiftsCount > 0 ? Math.round((completedShifts / totalShiftsCount) * 100) : 0;
+
+            // Update summary cards
+            document.getElementById('attendanceRate').textContent = attendanceRatePercent + '%';
+            document.getElementById('totalShifts').textContent = totalShiftsCount;
+            document.getElementById('totalOvertime').textContent = totalOvertimeHours.toFixed(1);
+            document.getElementById('totalLeaves').textContent = totalLeavesCount;
+
+            // Generate expiry alerts
+            let expiryHtml = '';
+            // Driver license expiries
+            (drivers || []).forEach(d => {
+                if (d.license_expiry && d.license_expiry <= expiryThreshold) {
+                    const daysLeft = Math.ceil((new Date(d.license_expiry) - today) / (1000 * 60 * 60 * 24));
+                    const urgency = daysLeft <= 7 ? 'bg-red-100 border-red-300' : 'bg-yellow-100 border-yellow-300';
+                    expiryHtml += `<div class="${urgency} border rounded-lg p-3"><div class="font-semibold">🪪 رخصة قيادة</div><div class="text-sm">${d.full_name}</div><div class="text-xs text-gray-600">تنتهي: ${d.license_expiry} (${daysLeft > 0 ? daysLeft + ' يوم' : 'منتهية'})</div></div>`;
+                }
+            });
+            // Vehicle expiries
+            (expiringVehicles || []).forEach(v => {
+                if (v.registration_expiry && v.registration_expiry <= expiryThreshold) {
+                    const daysLeft = Math.ceil((new Date(v.registration_expiry) - today) / (1000 * 60 * 60 * 24));
+                    const urgency = daysLeft <= 7 ? 'bg-red-100 border-red-300' : 'bg-yellow-100 border-yellow-300';
+                    expiryHtml += `<div class="${urgency} border rounded-lg p-3"><div class="font-semibold">📋 استمارة مركبة</div><div class="text-sm">${v.van_code} - ${v.plate_number}</div><div class="text-xs text-gray-600">تنتهي: ${v.registration_expiry} (${daysLeft > 0 ? daysLeft + ' يوم' : 'منتهية'})</div></div>`;
+                }
+                if (v.insurance_expiry && v.insurance_expiry <= expiryThreshold) {
+                    const daysLeft = Math.ceil((new Date(v.insurance_expiry) - today) / (1000 * 60 * 60 * 24));
+                    const urgency = daysLeft <= 7 ? 'bg-red-100 border-red-300' : 'bg-yellow-100 border-yellow-300';
+                    expiryHtml += `<div class="${urgency} border rounded-lg p-3"><div class="font-semibold">🛡️ تأمين مركبة</div><div class="text-sm">${v.van_code} - ${v.plate_number}</div><div class="text-xs text-gray-600">تنتهي: ${v.insurance_expiry} (${daysLeft > 0 ? daysLeft + ' يوم' : 'منتهية'})</div></div>`;
+                }
+            });
+            document.getElementById('expiryAlerts').innerHTML = expiryHtml || '<p class="text-green-600 col-span-2 text-center py-4">✓ لا توجد تنبيهات - جميع الوثائق سارية</p>';
+
+            // Generate driver performance table
+            const driverPerformance = (drivers || []).map(driver => {
+                const driverShifts = (shifts || []).filter(s => s.driver_id === driver.id);
+                const driverCompleted = driverShifts.filter(s => s.status === 'completed').length;
+                const driverAbsent = driverShifts.filter(s => s.status === 'absent' || (new Date(s.shift_date) < today && s.status === 'scheduled')).length;
+                const driverLeaves = (leaves || []).filter(l => l.driver_id === driver.id).length;
+                const driverOT = (timeRecords || []).filter(r => r.driver_id === driver.id).reduce((sum, r) => sum + Number(r.overtime_hours || 0), 0);
+                const rate = driverShifts.length > 0 ? Math.round((driverCompleted / driverShifts.length) * 100) : 0;
+
+                return {
+                    name: driver.full_name,
+                    code: driver.driver_code,
+                    scheduled: driverShifts.length,
+                    completed: driverCompleted,
+                    absent: driverAbsent,
+                    leaves: driverLeaves,
+                    overtime: driverOT,
+                    rate
+                };
+            });
+
+            document.getElementById('driverPerformanceBody').innerHTML = driverPerformance.length > 0 ?
+                driverPerformance.map(p => {
+                    const rateColor = p.rate >= 90 ? 'text-green-600' : p.rate >= 70 ? 'text-yellow-600' : 'text-red-600';
+                    return `<tr class="border-b hover:bg-gray-50"><td class="p-3"><div class="font-semibold">${p.name}</div><div class="text-xs text-gray-400">${p.code}</div></td><td class="p-3 text-center">${p.scheduled}</td><td class="p-3 text-center text-green-600 font-semibold">${p.completed}</td><td class="p-3 text-center text-red-600 font-semibold">${p.absent}</td><td class="p-3 text-center text-blue-600">${p.leaves}</td><td class="p-3 text-center text-yellow-600">${p.overtime.toFixed(1)}</td><td class="p-3 text-center ${rateColor} font-bold">${p.rate}%</td></tr>`;
+                }).join('') :
+                '<tr><td colspan="7" class="text-center py-8 text-gray-500">لا توجد بيانات</td></tr>';
+        }
+
+        function exportAnalyticsCSV() {
+            const rows = document.querySelectorAll('#driverPerformanceBody tr');
+            if (rows.length === 0 || rows[0].cells.length === 1) {
+                alert('لا توجد بيانات للتصدير');
+                return;
+            }
+
+            let csv = 'السائق,كود السائق,الورديات المجدولة,الحضور,الغياب,الإجازات,الساعات الإضافية,معدل الحضور\n';
+            rows.forEach(row => {
+                const cells = row.cells;
+                const name = cells[0].querySelector('.font-semibold')?.textContent || '';
+                const code = cells[0].querySelector('.text-gray-400')?.textContent || '';
+                csv += `"${name}","${code}","${cells[1].textContent}","${cells[2].textContent}","${cells[3].textContent}","${cells[4].textContent}","${cells[5].textContent}","${cells[6].textContent}"\n`;
+            });
+
+            downloadCSV(csv, 'driver_performance_report.csv');
+        }
+
+        // ========================================
+        // NOTIFICATION SYSTEM
+        // ========================================
+        let systemNotifications = [];
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationPanel');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                loadNotifications();
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        // Close notification panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('notificationPanel');
+            const bell = e.target.closest('button[onclick="toggleNotifications()"]');
+            if (!bell && !panel?.contains(e.target)) {
+                panel?.classList.add('hidden');
+            }
+        });
+
+        async function loadNotifications() {
+            const today = new Date();
+            const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+            systemNotifications = [];
+
+            // Check for license expiries
+            const thirtyDaysFromNow = new Date(today);
+            thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+            const expiryThreshold = thirtyDaysFromNow.toISOString().split('T')[0];
+
+            const { data: drivers } = await mySupabase.from('drivers').select('id, full_name, license_expiry').neq('role', 'admin').not('license_expiry', 'is', null);
+            (drivers || []).forEach(d => {
+                if (d.license_expiry && d.license_expiry <= expiryThreshold) {
+                    const daysLeft = Math.ceil((new Date(d.license_expiry) - today) / (1000 * 60 * 60 * 24));
+                    const notifId = `license_${d.id}_${d.license_expiry}`;
+                    systemNotifications.push({
+                        id: notifId,
+                        type: 'warning',
+                        icon: '🪪',
+                        title: 'رخصة قيادة تنتهي قريباً',
+                        message: `${d.full_name} - ${daysLeft > 0 ? 'تنتهي خلال ' + daysLeft + ' يوم' : 'منتهية'}`,
+                        read: readNotifications.includes(notifId),
+                        urgent: daysLeft <= 7
+                    });
+                }
+            });
+
+            // Check for vehicle expiries
+            const { data: vehicles } = await mySupabase.from('vehicles').select('id, van_code, registration_expiry, insurance_expiry');
+            (vehicles || []).forEach(v => {
+                if (v.registration_expiry && v.registration_expiry <= expiryThreshold) {
+                    const daysLeft = Math.ceil((new Date(v.registration_expiry) - today) / (1000 * 60 * 60 * 24));
+                    const notifId = `reg_${v.id}_${v.registration_expiry}`;
+                    systemNotifications.push({
+                        id: notifId,
+                        type: 'warning',
+                        icon: '📋',
+                        title: 'استمارة مركبة تنتهي قريباً',
+                        message: `${v.van_code} - ${daysLeft > 0 ? 'تنتهي خلال ' + daysLeft + ' يوم' : 'منتهية'}`,
+                        read: readNotifications.includes(notifId),
+                        urgent: daysLeft <= 7
+                    });
+                }
+                if (v.insurance_expiry && v.insurance_expiry <= expiryThreshold) {
+                    const daysLeft = Math.ceil((new Date(v.insurance_expiry) - today) / (1000 * 60 * 60 * 24));
+                    const notifId = `ins_${v.id}_${v.insurance_expiry}`;
+                    systemNotifications.push({
+                        id: notifId,
+                        type: 'warning',
+                        icon: '🛡️',
+                        title: 'تأمين مركبة ينتهي قريباً',
+                        message: `${v.van_code} - ${daysLeft > 0 ? 'تنتهي خلال ' + daysLeft + ' يوم' : 'منتهية'}`,
+                        read: readNotifications.includes(notifId),
+                        urgent: daysLeft <= 7
+                    });
+                }
+            });
+
+            // Check for pending leave requests
+            const { data: leaveRequests } = await mySupabase.from('leave_requests').select('id, drivers(full_name), leave_type, created_at').eq('status', 'pending');
+            (leaveRequests || []).forEach(l => {
+                const notifId = `leave_${l.id}`;
+                const leaveTypes = { annual: 'إجازة سنوية', sick: 'إجازة مرضية', personal: 'إجازة شخصية', emergency: 'إجازة طارئة' };
+                systemNotifications.push({
+                    id: notifId,
+                    type: 'info',
+                    icon: '🏖️',
+                    title: 'طلب إجازة بانتظار الموافقة',
+                    message: `${l.drivers?.full_name || 'سائق'} - ${leaveTypes[l.leave_type] || l.leave_type}`,
+                    read: readNotifications.includes(notifId),
+                    urgent: false
+                });
+            });
+
+            // Sort: urgent first, then unread, then by type
+            systemNotifications.sort((a, b) => {
+                if (a.urgent !== b.urgent) return b.urgent - a.urgent;
+                if (a.read !== b.read) return a.read - b.read;
+                return 0;
+            });
+
+            renderNotifications();
+        }
+
+        function renderNotifications() {
+            const unreadCount = systemNotifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notificationBadge');
+
+            if (unreadCount > 0) {
+                badge.classList.remove('hidden');
+                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            const list = document.getElementById('notificationsList');
+            if (systemNotifications.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-4">لا توجد إشعارات</p>';
+                return;
+            }
+
+            list.innerHTML = systemNotifications.map(n => {
+                const bgColor = n.read ? 'bg-white' : 'bg-blue-50';
+                const urgentBorder = n.urgent ? 'border-r-4 border-red-500' : '';
+                return `<div class="p-3 ${bgColor} ${urgentBorder} hover:bg-gray-50 cursor-pointer" onclick="markNotificationRead('${n.id}')">
+                    <div class="flex items-start gap-2">
+                        <span class="text-lg">${n.icon}</span>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold ${!n.read ? 'text-blue-900' : 'text-gray-700'}">${n.title}</p>
+                            <p class="text-xs text-gray-500">${n.message}</p>
+                        </div>
+                        ${!n.read ? '<span class="w-2 h-2 bg-blue-500 rounded-full mt-2"></span>' : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function markNotificationRead(notifId) {
+            const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+            if (!readNotifications.includes(notifId)) {
+                readNotifications.push(notifId);
+                localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+            }
+            const notif = systemNotifications.find(n => n.id === notifId);
+            if (notif) notif.read = true;
+            renderNotifications();
+        }
+
+        function markAllNotificationsRead() {
+            const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+            systemNotifications.forEach(n => {
+                if (!readNotifications.includes(n.id)) {
+                    readNotifications.push(n.id);
+                }
+                n.read = true;
+            });
+            localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+            renderNotifications();
+        }
+
+        // Load notifications on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => loadNotifications(), 1000);
+        });
 
         // ========================================
         // CSV EXPORT/IMPORT FUNCTIONS
@@ -2283,6 +3460,41 @@
 
         const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
+        // DATE LOOPHOLE FIX: Helper function to get budget period date boundaries
+        function getBudgetPeriodDates(budgetPeriod) {
+            if (!budgetPeriod || !budgetPeriod.period_month || !budgetPeriod.period_year) {
+                return null;
+            }
+            const month = budgetPeriod.period_month;
+            const year = budgetPeriod.period_year;
+
+            // Start of month (first day at 00:00:00)
+            const startDate = new Date(year, month - 1, 1);
+            // End of month (last day at 23:59:59)
+            const endDate = new Date(year, month, 0, 23, 59, 59);
+
+            return {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                startDateTime: startDate.toISOString(),
+                endDateTime: endDate.toISOString()
+            };
+        }
+
+        // DATE FORMAT FIX: Helper function to format dates in Gregorian (2026) format
+        function formatDateArabic(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return '';
+            // Use Gregorian calendar with Arabic numerals
+            return d.toLocaleDateString('ar-EG', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                calendar: 'gregory'
+            });
+        }
+
         // Initialize month selector
         function initBudgetMonthSelector() {
             const select = document.getElementById('budgetMonth');
@@ -2362,22 +3574,37 @@
 
             supervisorsData = supervisors || [];
 
-            // Load transfers for each supervisor in current period
+            // Load transfers for each supervisor in current period (FILTERED BY BUDGET PERIOD)
             for (let s of supervisorsData) {
-                const { data: transfers } = await mySupabase
+                let transfersQuery = mySupabase
                     .from('supervisor_transfers')
                     .select('amount')
                     .eq('supervisor_id', s.id);
 
+                // CRITICAL FIX #1: Filter by budget period
+                if (currentBudgetPeriod?.id) {
+                    transfersQuery = transfersQuery.eq('budget_period_id', currentBudgetPeriod.id);
+                }
+
+                const { data: transfers } = await transfersQuery;
                 s.total_transfers = (transfers || []).reduce((sum, t) => sum + Number(t.amount), 0);
 
-                // Calculate approved expenses for this supervisor
-                const { data: expenses } = await mySupabase
+                // Calculate approved expenses for this supervisor (FILTERED BY BUDGET PERIOD)
+                let expensesQuery = mySupabase
                     .from('expenses')
                     .select('amount')
                     .eq('supervisor_id', s.id)
                     .eq('status', 'approved');
 
+                // DATE LOOPHOLE FIX: Filter expenses by calculated budget period dates
+                const periodDates = getBudgetPeriodDates(currentBudgetPeriod);
+                if (periodDates) {
+                    expensesQuery = expensesQuery
+                        .gte('created_at', periodDates.startDate)
+                        .lte('created_at', periodDates.endDate + 'T23:59:59');
+                }
+
+                const { data: expenses } = await expensesQuery;
                 s.total_expenses = (expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
                 s.current_balance = s.total_transfers - s.total_expenses;
             }
@@ -2437,10 +3664,121 @@
             `).join('');
 
             document.getElementById('supervisorBalances').innerHTML = balancesHtml || '<p class="text-gray-500 col-span-3">لا يوجد مشرفين</p>';
+
+            // Populate compact summary for scalable view
+            const totalSupervisors = supervisorsData.length;
+            const totalTransfersAll = supervisorsData.reduce((sum, s) => sum + Number(s.total_transfers), 0);
+            const totalExpensesAll = supervisorsData.reduce((sum, s) => sum + Number(s.total_expenses), 0);
+            const totalBalanceAll = totalTransfersAll - totalExpensesAll;
+            const supervisorsWithBalance = supervisorsData.filter(s => s.current_balance > 0).length;
+            const supervisorsOverspent = supervisorsData.filter(s => s.current_balance < 0).length;
+
+            const summaryHtml = `
+                <div class="bg-white p-3 rounded-lg border border-blue-200 text-center">
+                    <p class="text-2xl font-bold text-blue-600">${totalSupervisors}</p>
+                    <p class="text-xs text-gray-600">عدد المشرفين</p>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-green-200 text-center">
+                    <p class="text-2xl font-bold text-green-600">${totalTransfersAll.toLocaleString()}</p>
+                    <p class="text-xs text-gray-600">إجمالي التحويلات</p>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-red-200 text-center">
+                    <p class="text-2xl font-bold text-red-600">${totalExpensesAll.toLocaleString()}</p>
+                    <p class="text-xs text-gray-600">إجمالي المصروفات</p>
+                </div>
+                <div class="bg-white p-3 rounded-lg border ${totalBalanceAll >= 0 ? 'border-emerald-200' : 'border-orange-200'} text-center">
+                    <p class="text-2xl font-bold ${totalBalanceAll >= 0 ? 'text-emerald-600' : 'text-orange-600'}">${totalBalanceAll.toLocaleString()}</p>
+                    <p class="text-xs text-gray-600">صافي الرصيد</p>
+                </div>
+            `;
+            document.getElementById('supervisorsSummary').innerHTML = summaryHtml;
+        }
+
+        // Show All Supervisors Modal (scalable table view)
+        function showAllSupervisorsModal() {
+            const modal = document.createElement('div');
+            modal.id = 'allSupervisorsModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+
+            // Sort supervisors by balance (overspent first)
+            const sortedSupervisors = [...supervisorsData].sort((a, b) => a.current_balance - b.current_balance);
+
+            const tableRows = sortedSupervisors.map((s, idx) => `
+                <tr class="border-b hover:bg-gray-50 ${s.current_balance < 0 ? 'bg-red-50' : ''}">
+                    <td class="p-3 text-center">${idx + 1}</td>
+                    <td class="p-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                ${s.full_name.charAt(0)}
+                            </div>
+                            <div>
+                                <p class="font-medium">${s.full_name}</p>
+                                <p class="text-xs text-gray-500">${s.region || '-'}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-3 text-center text-green-600 font-semibold">${Number(s.total_transfers).toLocaleString()}</td>
+                    <td class="p-3 text-center text-red-600 font-semibold">${Number(s.total_expenses).toLocaleString()}</td>
+                    <td class="p-3 text-center font-bold ${s.current_balance < 0 ? 'text-red-600' : 'text-emerald-600'}">
+                        ${Number(s.current_balance).toLocaleString()}
+                    </td>
+                    <td class="p-3 text-center">
+                        <div class="flex gap-1 justify-center">
+                            <button onclick="showAddTransferModal('${s.id}', '${s.full_name}')" class="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded text-xs" title="إضافة تحويل">
+                                💰
+                            </button>
+                            <button onclick="showSupervisorTransfers('${s.id}', '${s.full_name}')" class="p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs" title="سجل التحويلات">
+                                📋
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <div class="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                        <h3 class="text-lg font-bold">💼 جميع المشرفين (${supervisorsData.length})</h3>
+                        <button onclick="document.getElementById('allSupervisorsModal').remove()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+                    </div>
+                    <div class="p-4 overflow-auto flex-1">
+                        <table class="w-full text-sm" dir="rtl">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="p-3 text-center">#</th>
+                                    <th class="p-3 text-right">المشرف</th>
+                                    <th class="p-3 text-center">التحويلات</th>
+                                    <th class="p-3 text-center">المصروفات</th>
+                                    <th class="p-3 text-center">الرصيد</th>
+                                    <th class="p-3 text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows || '<tr><td colspan="6" class="p-4 text-center text-gray-500">لا يوجد مشرفين</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-4 border-t bg-gray-50 flex justify-between items-center">
+                        <div class="text-sm text-gray-600">
+                            <span class="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>
+                            المشرفين الذين تجاوزوا الميزانية
+                        </div>
+                        <button onclick="document.getElementById('allSupervisorsModal').remove()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg">
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
         }
 
         // Show Add Transfer Modal
         function showAddTransferModal(supervisorId, supervisorName) {
+            if (!hasPermission('manage_supervisors')) {
+                alert('ليس لديك صلاحية لإضافة تحويلات');
+                return;
+            }
             const modal = document.createElement('div');
             modal.id = 'addTransferModal';
             modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
@@ -2489,6 +3827,37 @@
                 return;
             }
 
+            // DATE LOOPHOLE FIX: Validate transfer date is within budget period
+            const periodDates = getBudgetPeriodDates(currentBudgetPeriod);
+            if (periodDates && transferDate) {
+                if (transferDate < periodDates.startDate || transferDate > periodDates.endDate) {
+                    const monthName = arabicMonths[currentBudgetPeriod.period_month - 1];
+                    alert(`⚠️ تاريخ التحويل خارج نطاق فترة الميزانية!\n\nالتاريخ المحدد: ${transferDate}\nفترة الميزانية: ${monthName} ${currentBudgetPeriod.period_year}\n(من ${periodDates.startDate} إلى ${periodDates.endDate})\n\nيرجى تغيير التاريخ أو اختيار فترة ميزانية مختلفة.`);
+                    return;
+                }
+            }
+
+            const transferAmount = Number(amount);
+
+            // VALIDATION: Check if transfer would exceed opening balance
+            const openingBalance = Number(currentBudgetPeriod?.opening_balance || 0);
+            const currentTotalDistributed = supervisorsData.reduce((sum, s) => sum + Number(s.total_transfers || 0), 0);
+            const newTotalDistributed = currentTotalDistributed + transferAmount;
+
+            if (newTotalDistributed > openingBalance) {
+                const remainingBudget = openingBalance - currentTotalDistributed;
+                alert(`⚠️ لا يمكن إجراء هذا التحويل!\n\nالمبلغ المطلوب: ${transferAmount.toLocaleString()} ر.س\nالمتبقي للتوزيع: ${remainingBudget.toLocaleString()} ر.س\n\nيرجى زيادة الرصيد الافتتاحي أولاً أو تقليل مبلغ التحويل.`);
+                return;
+            }
+
+            // Warning if transfer is large (> 50% of remaining)
+            const remainingBudget = openingBalance - currentTotalDistributed;
+            if (transferAmount > remainingBudget * 0.5 && remainingBudget > 0) {
+                if (!confirm(`تنبيه: هذا التحويل (${transferAmount.toLocaleString()} ر.س) يمثل ${((transferAmount / remainingBudget) * 100).toFixed(0)}% من المتبقي للتوزيع.\n\nهل تريد المتابعة؟`)) {
+                    return;
+                }
+            }
+
             let receiptUrl = null;
             if (receiptFile) {
                 const fileName = `transfer_${Date.now()}_${receiptFile.name}`;
@@ -2504,7 +3873,7 @@
 
             const { error } = await mySupabase.from('supervisor_transfers').insert([{
                 supervisor_id: supervisorId,
-                amount: Number(amount),
+                amount: transferAmount,
                 transfer_date: transferDate,
                 receipt_url: receiptUrl,
                 notes: notes,
@@ -2516,18 +3885,25 @@
                 return;
             }
 
+            await logAction('add_transfer', 'supervisor', supervisorId, { amount: transferAmount, supervisor_id: supervisorId });
             document.getElementById('addTransferModal').remove();
             await loadSupervisors();
             alert('تم إضافة التحويل بنجاح');
         }
 
-        // Show Supervisor Transfers
+        // Show Supervisor Transfers (FILTERED BY CURRENT BUDGET PERIOD)
         async function showSupervisorTransfers(supervisorId, supervisorName) {
-            const { data: transfers } = await mySupabase
+            let query = mySupabase
                 .from('supervisor_transfers')
                 .select('*')
-                .eq('supervisor_id', supervisorId)
-                .order('transfer_date', { ascending: false });
+                .eq('supervisor_id', supervisorId);
+
+            // CRITICAL FIX #1: Filter by budget period
+            if (currentBudgetPeriod?.id) {
+                query = query.eq('budget_period_id', currentBudgetPeriod.id);
+            }
+
+            const { data: transfers } = await query.order('transfer_date', { ascending: false });
 
             const modal = document.createElement('div');
             modal.id = 'transfersModal';
@@ -2537,12 +3913,12 @@
                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                         <p class="font-bold text-green-600">+${Number(t.amount).toLocaleString()} ر.س</p>
-                        <p class="text-xs text-gray-500">${new Date(t.transfer_date).toLocaleDateString('ar-SA')}</p>
+                        <p class="text-xs text-gray-500">${formatDateArabic(t.transfer_date)}</p>
                         ${t.notes ? `<p class="text-xs text-gray-600 mt-1">${t.notes}</p>` : ''}
                     </div>
                     <div class="flex gap-2">
                         ${t.receipt_url ? `<button onclick="window.open('${t.receipt_url}', '_blank')" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">📷</button>` : ''}
-                        <button onclick="deleteTransfer('${t.id}')" class="px-2 py-1 text-xs bg-red-100 text-red-700 rounded">🗑️</button>
+                        <button onclick="showModifyTransferModal('${t.id}', ${t.amount}, '${t.transfer_date}', '${t.notes || ''}', '${supervisorId}')" class="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded">✏️ تعديل</button>
                     </div>
                 </div>
             `).join('') || '<p class="text-center text-gray-500 py-4">لا توجد تحويلات</p>';
@@ -2561,20 +3937,193 @@
             document.body.appendChild(modal);
         }
 
-        // Delete Transfer
-        async function deleteTransfer(transferId) {
-            if (!confirm('هل أنت متأكد من حذف هذا التحويل؟')) return;
+        // CRITICAL FIX #4: Show Modify Transfer Modal (instead of delete)
+        function showModifyTransferModal(transferId, currentAmount, currentDate, currentNotes, supervisorId) {
+            if (!hasPermission('manage_budget')) {
+                alert('ليس لديك صلاحية لتعديل التحويلات');
+                return;
+            }
 
-            await mySupabase.from('supervisor_transfers').delete().eq('id', transferId);
-            document.getElementById('transfersModal').remove();
-            await loadSupervisors();
+            // Close existing modals
+            const existingModal = document.getElementById('modifyTransferModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'modifyTransferModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                    <div class="p-4 border-b flex items-center justify-between">
+                        <h3 class="text-lg font-bold">✏️ تعديل التحويل</h3>
+                        <button onclick="document.getElementById('modifyTransferModal').remove()" class="text-gray-500 hover:text-gray-700 text-xl">✕</button>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <p class="text-sm text-yellow-800">
+                                <strong>⚠️ تنبيه:</strong> يجب إرفاق صورة إيصال جديدة عند تعديل التحويل
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">المبلغ (ر.س) *</label>
+                            <input type="number" id="modifyTransferAmount" value="${currentAmount}" min="1" step="0.01"
+                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">تاريخ التحويل</label>
+                            <input type="date" id="modifyTransferDate" value="${currentDate}"
+                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">ملاحظات</label>
+                            <textarea id="modifyTransferNotes" rows="2"
+                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500">${currentNotes}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">صورة الإيصال الجديدة <span class="text-red-500">* (مطلوبة)</span></label>
+                            <input type="file" id="modifyTransferReceipt" accept="image/*" required
+                                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500">
+                            <p class="text-xs text-gray-500 mt-1">يجب إرفاق إيصال جديد لتوثيق التعديل</p>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="saveModifiedTransfer('${transferId}', '${supervisorId}')"
+                                class="flex-1 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold">
+                                💾 حفظ التعديلات
+                            </button>
+                            <button onclick="document.getElementById('modifyTransferModal').remove()"
+                                class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // CRITICAL FIX #4: Save Modified Transfer (requires new receipt)
+        async function saveModifiedTransfer(transferId, supervisorId) {
+            const amount = document.getElementById('modifyTransferAmount').value;
+            const transferDate = document.getElementById('modifyTransferDate').value;
+            const notes = document.getElementById('modifyTransferNotes').value;
+            const receiptFile = document.getElementById('modifyTransferReceipt').files[0];
+
+            // Validate
+            if (!amount || Number(amount) <= 0) {
+                alert('يرجى إدخال مبلغ صحيح');
+                return;
+            }
+
+            if (!receiptFile) {
+                alert('⚠️ يجب إرفاق صورة إيصال جديدة لتعديل التحويل');
+                return;
+            }
+
+            // DATE LOOPHOLE FIX: Validate transfer date is within budget period
+            const periodDates = getBudgetPeriodDates(currentBudgetPeriod);
+            if (periodDates && transferDate) {
+                if (transferDate < periodDates.startDate || transferDate > periodDates.endDate) {
+                    const monthName = arabicMonths[currentBudgetPeriod.period_month - 1];
+                    alert(`⚠️ تاريخ التحويل خارج نطاق فترة الميزانية!\n\nالتاريخ المحدد: ${transferDate}\nفترة الميزانية: ${monthName} ${currentBudgetPeriod.period_year}\n(من ${periodDates.startDate} إلى ${periodDates.endDate})\n\nيرجى تغيير التاريخ أو اختيار فترة ميزانية مختلفة.`);
+                    return;
+                }
+            }
+
+            const transferAmount = Number(amount);
+
+            // Get original transfer to calculate difference
+            const { data: originalTransfer } = await mySupabase
+                .from('supervisor_transfers')
+                .select('amount')
+                .eq('id', transferId)
+                .single();
+
+            if (!originalTransfer) {
+                alert('خطأ: لم يتم العثور على التحويل');
+                return;
+            }
+
+            const amountDifference = transferAmount - Number(originalTransfer.amount);
+
+            // VALIDATION: Check if increase would exceed opening balance
+            if (amountDifference > 0) {
+                const openingBalance = Number(currentBudgetPeriod?.opening_balance || 0);
+                const currentTotalDistributed = supervisorsData.reduce((sum, s) => sum + Number(s.total_transfers || 0), 0);
+                const newTotalDistributed = currentTotalDistributed + amountDifference;
+
+                if (newTotalDistributed > openingBalance) {
+                    const remainingBudget = openingBalance - currentTotalDistributed;
+                    alert(`⚠️ لا يمكن زيادة هذا التحويل!\n\nالزيادة المطلوبة: ${amountDifference.toLocaleString()} ر.س\nالمتبقي للتوزيع: ${remainingBudget.toLocaleString()} ر.س\n\nيرجى زيادة الرصيد الافتتاحي أولاً.`);
+                    return;
+                }
+            }
+
+            try {
+                // Upload new receipt
+                const fileName = `transfer_mod_${Date.now()}_${receiptFile.name}`;
+                const { data: uploadData, error: uploadError } = await mySupabase.storage
+                    .from('expenses')
+                    .upload(fileName, receiptFile);
+
+                if (uploadError) {
+                    alert('خطأ في رفع الإيصال: ' + uploadError.message);
+                    return;
+                }
+
+                const { data: urlData } = mySupabase.storage.from('expenses').getPublicUrl(fileName);
+                const receiptUrl = urlData.publicUrl;
+
+                // Update transfer
+                const { error: updateError } = await mySupabase
+                    .from('supervisor_transfers')
+                    .update({
+                        amount: transferAmount,
+                        transfer_date: transferDate,
+                        notes: notes + (notes ? ' | ' : '') + '[تم التعديل: ' + formatDateArabic(new Date()) + ']',
+                        receipt_url: receiptUrl,
+                        modified_at: new Date().toISOString()
+                    })
+                    .eq('id', transferId);
+
+                if (updateError) {
+                    alert('خطأ في حفظ التعديلات: ' + updateError.message);
+                    return;
+                }
+
+                // Log the modification
+                await logAction('modify_transfer', 'supervisor', supervisorId, {
+                    transfer_id: transferId,
+                    old_amount: originalTransfer.amount,
+                    new_amount: transferAmount,
+                    difference: amountDifference
+                });
+
+                document.getElementById('modifyTransferModal').remove();
+                document.getElementById('transfersModal').remove();
+                await loadSupervisors();
+                alert('تم تعديل التحويل بنجاح');
+
+            } catch (error) {
+                alert('خطأ: ' + error.message);
+            }
         }
 
         // Show Transfer History Modal (all supervisors)
         async function showTransferHistoryModal() {
-            const { data: transfers } = await mySupabase
+            let query = mySupabase
                 .from('supervisor_transfers')
-                .select('*, supervisors(full_name)')
+                .select('*, supervisors(full_name)');
+
+            // CRITICAL FIX #1: Filter by budget period
+            if (currentBudgetPeriod?.id) {
+                query = query.eq('budget_period_id', currentBudgetPeriod.id);
+            }
+
+            const { data: transfers } = await query
                 .order('transfer_date', { ascending: false })
                 .limit(50);
 
@@ -2587,7 +4136,7 @@
                     <div>
                         <p class="font-semibold">${t.supervisors?.full_name || 'غير معروف'}</p>
                         <p class="text-sm text-green-600 font-bold">+${Number(t.amount).toLocaleString()} ر.س</p>
-                        <p class="text-xs text-gray-500">${new Date(t.transfer_date).toLocaleDateString('ar-SA')}</p>
+                        <p class="text-xs text-gray-500">${formatDateArabic(t.transfer_date)}</p>
                     </div>
                     ${t.receipt_url ? `<button onclick="window.open('${t.receipt_url}', '_blank')" class="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded">📷 إيصال</button>` : ''}
                 </div>
@@ -2607,48 +4156,132 @@
             document.body.appendChild(modal);
         }
 
-        // Load Driver Expenses Summary
-        async function loadDriverExpensesSummary() {
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+        // Expense category labels and icons
+        const expenseCategories = {
+            fuel: { label: 'وقود', icon: '⛽', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+            maintenance: { label: 'صيانة', icon: '🔧', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+            cleaning: { label: 'تنظيف', icon: '🧹', color: 'bg-green-100 text-green-700 border-green-300' },
+            parking: { label: 'مواقف', icon: '🅿️', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+            toll: { label: 'رسوم طرق', icon: '🛣️', color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+            food: { label: 'طعام', icon: '🍔', color: 'bg-red-100 text-red-700 border-red-300' },
+            other: { label: 'أخرى', icon: '📋', color: 'bg-gray-100 text-gray-700 border-gray-300' }
+        };
+
+        let currentMonthExpenses = [];
+
+        // Load Category-Based Expenses Summary
+        async function loadCategoryExpensesSummary() {
+            // DATE LOOPHOLE FIX: Use selected budget period instead of current month
+            const periodDates = getBudgetPeriodDates(currentBudgetPeriod);
+            if (!periodDates) {
+                document.getElementById('categoryExpensesSummary').innerHTML = '<p class="text-center text-gray-500 py-4">اختر فترة الميزانية</p>';
+                return;
+            }
 
             const { data: expenses } = await mySupabase
                 .from('expenses')
-                .select('amount, driver:drivers!expenses_driver_id_fkey(full_name)')
+                .select('amount, expense_type, driver:drivers!expenses_driver_id_fkey(full_name, driver_code)')
                 .eq('status', 'approved')
-                .gte('created_at', startOfMonth)
-                .lte('created_at', endOfMonth);
+                .gte('created_at', periodDates.startDate)
+                .lte('created_at', periodDates.endDate + 'T23:59:59');
+
+            currentMonthExpenses = expenses || [];
+
+            // Group by category
+            const categoryTotals = {};
+            Object.keys(expenseCategories).forEach(cat => categoryTotals[cat] = 0);
+
+            currentMonthExpenses.forEach(e => {
+                const cat = e.expense_type || 'other';
+                categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(e.amount);
+            });
+
+            const totalExpenses = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+
+            const summaryHtml = Object.entries(expenseCategories)
+                .map(([key, cat]) => `
+                    <div class="rounded-lg p-3 text-center border-2 cursor-pointer hover:shadow-md transition-shadow ${cat.color}" onclick="showCategoryBreakdown('${key}')">
+                        <div class="text-2xl mb-1">${cat.icon}</div>
+                        <p class="text-xs font-semibold">${cat.label}</p>
+                        <p class="font-bold text-lg">${categoryTotals[key].toLocaleString()}</p>
+                        <p class="text-xs opacity-70">ر.س</p>
+                    </div>
+                `).join('') + `
+                <div class="rounded-lg p-3 text-center border-2 bg-gradient-to-br from-purple-600 to-purple-800 text-white">
+                    <div class="text-2xl mb-1">💰</div>
+                    <p class="text-xs font-semibold">الإجمالي</p>
+                    <p class="font-bold text-lg">${totalExpenses.toLocaleString()}</p>
+                    <p class="text-xs opacity-70">ر.س</p>
+                </div>`;
+
+            document.getElementById('categoryExpensesSummary').innerHTML = summaryHtml;
+        }
+
+        // Show category breakdown by driver
+        function showCategoryBreakdown(category) {
+            const cat = expenseCategories[category];
+            const categoryExpenses = currentMonthExpenses.filter(e => (e.expense_type || 'other') === category);
 
             // Group by driver
             const driverTotals = {};
-            (expenses || []).forEach(e => {
+            categoryExpenses.forEach(e => {
                 const name = e.driver?.full_name || 'غير معروف';
-                driverTotals[name] = (driverTotals[name] || 0) + Number(e.amount);
+                const code = e.driver?.driver_code || '';
+                const key = `${name}||${code}`;
+                driverTotals[key] = (driverTotals[key] || 0) + Number(e.amount);
             });
 
-            const summaryHtml = Object.entries(driverTotals)
-                .sort((a, b) => b[1] - a[1])
-                .map(([name, total]) => `
-                    <div class="bg-white rounded-lg p-2 text-center border">
-                        <p class="text-xs text-gray-500 truncate">${name}</p>
-                        <p class="font-bold text-sm">${total.toLocaleString()} ر.س</p>
-                    </div>
-                `).join('') || '<p class="text-gray-500 col-span-4 text-center py-2">لا توجد مصروفات هذا الشهر</p>';
+            const total = Object.values(driverTotals).reduce((a, b) => a + b, 0);
 
-            document.getElementById('driverExpensesSummary').innerHTML = summaryHtml;
+            const driversHtml = Object.entries(driverTotals)
+                .sort((a, b) => b[1] - a[1])
+                .map(([key, amount]) => {
+                    const [name, code] = key.split('||');
+                    return `<div class="flex items-center justify-between p-3 border-b"><div><p class="font-semibold">${name}</p><p class="text-xs text-gray-500">${code}</p></div><p class="font-bold">${amount.toLocaleString()} ر.س</p></div>`;
+                }).join('') || '<p class="text-center text-gray-500 py-4">لا توجد مصروفات في هذه الفئة</p>';
+
+            const modal = document.createElement('div');
+            modal.id = 'categoryBreakdownModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden">
+                    <div class="p-4 border-b ${cat.color} flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">${cat.icon}</span>
+                            <div>
+                                <h3 class="font-bold">${cat.label}</h3>
+                                <p class="text-sm opacity-70">إجمالي: ${total.toLocaleString()} ر.س</p>
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('categoryBreakdownModal').remove()" class="p-2 hover:bg-black/10 rounded-lg">✕</button>
+                    </div>
+                    <div class="overflow-y-auto max-h-[60vh]">
+                        ${driversHtml}
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        // Keep old function name for compatibility
+        async function loadDriverExpensesSummary() {
+            await loadCategoryExpensesSummary();
         }
 
         // Export Driver Expenses CSV
         async function exportDriverExpensesCSV() {
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            // DATE LOOPHOLE FIX: Use selected budget period instead of current month
+            const periodDates = getBudgetPeriodDates(currentBudgetPeriod);
+            if (!periodDates) {
+                alert('يرجى اختيار فترة الميزانية أولاً');
+                return;
+            }
 
             const { data: expenses } = await mySupabase
                 .from('expenses')
                 .select('amount, description, created_at, driver:drivers!expenses_driver_id_fkey(full_name, driver_code)')
                 .eq('status', 'approved')
-                .gte('created_at', startOfMonth)
+                .gte('created_at', periodDates.startDate)
+                .lte('created_at', periodDates.endDate + 'T23:59:59')
                 .order('created_at', { ascending: false });
 
             if (!expenses || expenses.length === 0) {
@@ -2658,10 +4291,10 @@
 
             let csv = 'السائق,كود السائق,المبلغ,الوصف,التاريخ\n';
             expenses.forEach(e => {
-                csv += `"${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.amount}","${e.description}","${new Date(e.created_at).toLocaleDateString('ar-SA')}"\n`;
+                csv += `"${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.amount}","${e.description}","${formatDateArabic(e.created_at)}"\n`;
             });
 
-            downloadCSV(csv, `driver_expenses_${now.getFullYear()}_${now.getMonth() + 1}.csv`);
+            downloadCSV(csv, `driver_expenses_${currentBudgetPeriod?.period_year || 'unknown'}_${currentBudgetPeriod?.period_month || 'unknown'}.csv`);
         }
 
         async function loadExpenses() {
@@ -2677,18 +4310,36 @@
                 `)
                 .order('created_at', { ascending: false });
 
-            // Date filter
-            const now = new Date();
-            if (dateRange === 'today') {
-                const today = now.toISOString().split('T')[0];
-                query = query.gte('created_at', today);
-            } else if (dateRange === 'week') {
-                const weekAgo = new Date(now.setDate(now.getDate() - 7)).toISOString();
-                query = query.gte('created_at', weekAgo);
-            } else if (dateRange === 'month') {
-                const monthAgo = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
-                query = query.gte('created_at', monthAgo);
+            // DATE LOOPHOLE FIX: Always filter by selected budget period first
+            const periodDates = getBudgetPeriodDates(currentBudgetPeriod);
+            if (periodDates) {
+                query = query
+                    .gte('created_at', periodDates.startDate)
+                    .lte('created_at', periodDates.endDate + 'T23:59:59');
             }
+
+            // Additional date filter within budget period (optional refinement)
+            if (dateRange !== 'all') {
+                const now = new Date();
+                if (dateRange === 'today') {
+                    const today = now.toISOString().split('T')[0];
+                    query = query.gte('created_at', today);
+                } else if (dateRange === 'yesterday') {
+                    const yesterday = new Date(now);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = yesterday.toISOString().split('T')[0];
+                    query = query.gte('created_at', yesterdayStr).lte('created_at', yesterdayStr + 'T23:59:59');
+                } else if (dateRange === 'last7') {
+                    const weekAgo = new Date(now);
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    query = query.gte('created_at', weekAgo.toISOString().split('T')[0]);
+                } else if (dateRange === 'last30') {
+                    const monthAgo = new Date(now);
+                    monthAgo.setDate(monthAgo.getDate() - 30);
+                    query = query.gte('created_at', monthAgo.toISOString().split('T')[0]);
+                }
+            }
+            // 'all' uses budget period dates only (already applied above)
 
             // Status filter
             if (status !== 'all') {
@@ -2739,7 +4390,7 @@
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusColors[e.status] || 'bg-gray-100'}">${statusLabels[e.status] || e.status}</span>
-                                <span class="text-sm text-gray-500">${new Date(e.created_at).toLocaleDateString('ar-SA')}</span>
+                                <span class="text-sm text-gray-500">${formatDateArabic(e.created_at)}</span>
                             </div>
                             <p class="font-bold text-lg text-gray-800">${Number(e.amount).toLocaleString()} ر.س</p>
                             <p class="text-gray-600 mt-1">${e.description}</p>
@@ -2817,6 +4468,18 @@
                 return;
             }
 
+            // CRITICAL FIX #3: Lock approved expenses from editing
+            if (expense.status === 'approved') {
+                alert('⚠️ لا يمكن تعديل مصروف تمت الموافقة عليه مسبقاً\n\nالمصروفات المعتمدة مقفلة ولا يمكن تغييرها.');
+                return;
+            }
+
+            // Also prevent reverting rejected expenses
+            if (expense.status === 'rejected' && newStatus !== 'rejected') {
+                alert('⚠️ لا يمكن تعديل مصروف مرفوض\n\nيجب على السائق إرسال طلب جديد.');
+                return;
+            }
+
             if (newStatus === 'approved') {
                 // Check if expense has a supervisor assigned
                 let supervisorUUID = null;
@@ -2887,7 +4550,16 @@
                 return;
             }
 
-            const newBalance = Number(supervisor.current_balance) - Number(amount);
+            const expenseAmount = Number(amount);
+            const currentBalance = Number(supervisor.current_balance || 0);
+            const newBalance = currentBalance - expenseAmount;
+
+            // VALIDATION: Block if supervisor has insufficient balance
+            if (newBalance < 0) {
+                const deficit = Math.abs(newBalance);
+                alert(`⚠️ لا يمكن اعتماد هذا المصروف!\n\nرصيد المشرف (${supervisor.full_name}) غير كافي.\n\nالمبلغ المطلوب: ${expenseAmount.toLocaleString()} ر.س\nالرصيد الحالي: ${currentBalance.toLocaleString()} ر.س\nينقص: ${deficit.toLocaleString()} ر.س\n\nيرجى تحويل مبلغ إضافي للمشرف أولاً.`);
+                return;
+            }
 
             // Update expense status
             const { error: expenseError } = await mySupabase
@@ -2932,6 +4604,17 @@
         }
 
         function showSupervisorSelectModal(expenseId, amount) {
+            const expenseAmount = Number(amount);
+
+            // Sort supervisors: those with sufficient balance first
+            const sortedSupervisors = [...supervisorsData].sort((a, b) => {
+                const aHasEnough = Number(a.current_balance) >= expenseAmount;
+                const bHasEnough = Number(b.current_balance) >= expenseAmount;
+                if (aHasEnough && !bHasEnough) return -1;
+                if (!aHasEnough && bHasEnough) return 1;
+                return Number(b.current_balance) - Number(a.current_balance);
+            });
+
             const modalHtml = `
                 <div id="supervisorSelectModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -2940,26 +4623,33 @@
                             <p class="text-sm text-gray-500 mt-1">هذا المصروف غير مرتبط بمشرف. اختر المشرف الذي سيتم الخصم من رصيده.</p>
                         </div>
                         <div class="p-4 space-y-3">
-                            <p class="text-center font-bold text-lg text-purple-600">${Number(amount).toLocaleString()} ر.س</p>
+                            <p class="text-center font-bold text-lg text-purple-600">المبلغ المطلوب: ${expenseAmount.toLocaleString()} ر.س</p>
                             <div class="space-y-2">
-                                ${supervisorsData.map(s => `
-                                    <button onclick="selectSupervisorForExpense('${expenseId}', ${amount}, '${s.id}')"
-                                        class="w-full p-3 border rounded-lg hover:bg-blue-50 flex items-center justify-between">
+                                ${sortedSupervisors.map(s => {
+                                    const balance = Number(s.current_balance || 0);
+                                    const hasEnough = balance >= expenseAmount;
+                                    const remaining = balance - expenseAmount;
+
+                                    return `
+                                    <button onclick="selectSupervisorForExpense('${expenseId}', ${amount}, '${s.id}', ${hasEnough})"
+                                        class="w-full p-3 border-2 rounded-lg flex items-center justify-between ${hasEnough ? 'border-green-300 hover:bg-green-50' : 'border-red-300 hover:bg-red-50 opacity-70'}">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                ${s.full_name.charAt(0)}
+                                            <div class="w-10 h-10 ${hasEnough ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center text-white font-bold">
+                                                ${hasEnough ? '✓' : '✗'}
                                             </div>
                                             <div class="text-right">
                                                 <p class="font-semibold">${s.full_name}</p>
-                                                <p class="text-xs text-gray-500">${s.region}</p>
+                                                <p class="text-xs text-gray-500">${s.region || ''}</p>
                                             </div>
                                         </div>
                                         <div class="text-left">
-                                            <p class="text-sm text-gray-500">الرصيد الحالي</p>
-                                            <p class="font-bold ${Number(s.current_balance) < 5000 ? 'text-red-600' : 'text-green-600'}">${Number(s.current_balance).toLocaleString()} ر.س</p>
+                                            <p class="text-xs text-gray-500">الرصيد: <span class="${hasEnough ? 'text-green-600' : 'text-red-600'} font-bold">${balance.toLocaleString()}</span></p>
+                                            <p class="text-xs ${hasEnough ? 'text-green-600' : 'text-red-600'}">
+                                                ${hasEnough ? `المتبقي بعد الخصم: ${remaining.toLocaleString()}` : `ينقص: ${Math.abs(remaining).toLocaleString()}`}
+                                            </p>
                                         </div>
                                     </button>
-                                `).join('')}
+                                `}).join('')}
                             </div>
                         </div>
                         <div class="p-4 border-t">
@@ -2973,12 +4663,27 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
 
-        async function selectSupervisorForExpense(expenseId, amount, supervisorId) {
+        async function selectSupervisorForExpense(expenseId, amount, supervisorId, hasEnough) {
+            if (!hasEnough) {
+                alert('⚠️ لا يمكن اختيار هذا المشرف!\n\nرصيده غير كافي لتغطية هذا المصروف.\nيرجى اختيار مشرف آخر أو تحويل مبلغ إضافي لهذا المشرف أولاً.');
+                return;
+            }
             document.getElementById('supervisorSelectModal').remove();
             await approveAndDeduct(expenseId, amount, supervisorId);
         }
 
         function assignSupervisorToExpense(expenseId, amount) {
+            const expenseAmount = Number(amount);
+
+            // Sort supervisors by balance (sufficient first)
+            const sortedSupervisors = [...supervisorsData].sort((a, b) => {
+                const aHasEnough = Number(a.current_balance) >= expenseAmount;
+                const bHasEnough = Number(b.current_balance) >= expenseAmount;
+                if (aHasEnough && !bHasEnough) return -1;
+                if (!aHasEnough && bHasEnough) return 1;
+                return Number(b.current_balance) - Number(a.current_balance);
+            });
+
             const modalHtml = `
                 <div id="assignSupervisorModal" class="modal active fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div class="bg-white rounded-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -2987,28 +4692,30 @@
                             <p class="text-sm text-gray-500 mt-1">اختر المشرف الذي دفع هذا المصروف</p>
                         </div>
                         <div class="p-4 space-y-3">
-                            <p class="text-center font-bold text-lg text-purple-600">${Number(amount).toLocaleString()} ر.س</p>
+                            <p class="text-center font-bold text-lg text-purple-600">المبلغ: ${expenseAmount.toLocaleString()} ر.س</p>
                             <div class="space-y-2">
-                                ${Object.entries(supervisorCodeMap).map(([code, data]) => {
-                                    const supervisor = supervisorsData.find(s =>
-                                        s.full_name.toLowerCase().includes(data.en.split(' ')[0].toLowerCase())
-                                    );
-                                    const currentBalance = supervisor ? Number(supervisor.current_balance) : 0;
+                                ${sortedSupervisors.map(s => {
+                                    const balance = Number(s.current_balance || 0);
+                                    const hasEnough = balance >= expenseAmount;
+                                    const remaining = balance - expenseAmount;
+
                                     return `
-                                    <button onclick="saveExpenseSupervisor('${expenseId}', '${code}')"
-                                        class="w-full p-3 border rounded-lg hover:bg-purple-50 flex items-center justify-between">
+                                    <button onclick="saveExpenseSupervisorById('${expenseId}', '${s.id}', ${hasEnough})"
+                                        class="w-full p-3 border-2 rounded-lg flex items-center justify-between ${hasEnough ? 'border-green-300 hover:bg-green-50' : 'border-red-300 hover:bg-red-50 opacity-70'}">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                ${data.ar.charAt(0)}
+                                            <div class="w-10 h-10 ${hasEnough ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center text-white font-bold">
+                                                ${hasEnough ? '✓' : '✗'}
                                             </div>
                                             <div class="text-right">
-                                                <p class="font-semibold">${data.ar}</p>
-                                                <p class="text-xs text-gray-500">${data.region}</p>
+                                                <p class="font-semibold">${s.full_name}</p>
+                                                <p class="text-xs text-gray-500">${s.region || ''}</p>
                                             </div>
                                         </div>
                                         <div class="text-left">
-                                            <p class="text-sm text-gray-500">الرصيد الحالي</p>
-                                            <p class="font-bold ${currentBalance < 5000 ? 'text-red-600' : 'text-green-600'}">${currentBalance.toLocaleString()} ر.س</p>
+                                            <p class="text-xs text-gray-500">الرصيد: <span class="${hasEnough ? 'text-green-600' : 'text-red-600'} font-bold">${balance.toLocaleString()}</span></p>
+                                            <p class="text-xs ${hasEnough ? 'text-green-600' : 'text-red-600'}">
+                                                ${hasEnough ? `المتبقي: ${remaining.toLocaleString()}` : `ينقص: ${Math.abs(remaining).toLocaleString()}`}
+                                            </p>
                                         </div>
                                     </button>
                                 `}).join('')}
@@ -3023,6 +4730,36 @@
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        async function saveExpenseSupervisorById(expenseId, supervisorId, hasEnough) {
+            if (!hasEnough) {
+                alert('⚠️ تحذير: رصيد هذا المشرف غير كافي لتغطية هذا المصروف.\n\nيمكنك المتابعة لكن لن تتمكن من اعتماد المصروف لاحقاً حتى يتم تحويل مبلغ للمشرف.');
+            }
+
+            const supervisor = supervisorsData.find(s => s.id === supervisorId);
+            if (!supervisor) {
+                alert('خطأ: المشرف غير موجود');
+                return;
+            }
+
+            const { error } = await mySupabase
+                .from('expenses')
+                .update({
+                    supervisor_id: supervisorId,
+                    supervisor_name: supervisor.full_name,
+                    company_paid: true
+                })
+                .eq('id', expenseId);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            document.getElementById('assignSupervisorModal').remove();
+            alert('تم تحديد المشرف بنجاح');
+            loadExpenses();
         }
 
         async function saveExpenseSupervisor(expenseId, supervisorCode) {
@@ -3052,6 +4789,10 @@
         }
 
         function editCompanyBudget() {
+            if (!hasPermission('manage_budget')) {
+                alert('ليس لديك صلاحية لتعديل الميزانية');
+                return;
+            }
             if (!currentBudgetPeriod) return;
 
             const periodLabel = `${arabicMonths[currentBudgetPeriod.period_month - 1]} ${currentBudgetPeriod.period_year}`;
@@ -3114,6 +4855,200 @@
             currentBudgetPeriod.opening_balance = newOpeningBalance;
             document.getElementById('editCompanyBudgetModal').remove();
             alert('تم تحديث الميزانية بنجاح');
+            await loadBudgetPeriod();
+        }
+
+        // Budget transaction history stored in localStorage (can be moved to DB later)
+        function getBudgetTransactions() {
+            const key = `budget_transactions_${currentBudgetPeriod?.id || 'default'}`;
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        }
+
+        function saveBudgetTransaction(transaction) {
+            const key = `budget_transactions_${currentBudgetPeriod?.id || 'default'}`;
+            const transactions = getBudgetTransactions();
+            transactions.push({
+                ...transaction,
+                id: 'TXN-' + Date.now(),
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem(key, JSON.stringify(transactions));
+        }
+
+        // Add money to budget (Update, not Edit)
+        function addBudgetTransaction() {
+            if (!hasPermission('manage_budget')) {
+                alert('ليس لديك صلاحية لتعديل الميزانية');
+                return;
+            }
+            if (!currentBudgetPeriod) return;
+
+            const periodLabel = `${arabicMonths[currentBudgetPeriod.period_month - 1]} ${currentBudgetPeriod.period_year}`;
+            const currentBalance = Number(currentBudgetPeriod.opening_balance) || 0;
+
+            const modal = document.createElement('div');
+            modal.id = 'addBudgetTransactionModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl max-w-md w-full">
+                    <div class="p-4 border-b flex items-center justify-between bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-xl">
+                        <h3 class="font-bold">إضافة للميزانية - ${periodLabel}</h3>
+                        <button onclick="document.getElementById('addBudgetTransactionModal').remove()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        <div class="bg-purple-50 rounded-lg p-3 text-center">
+                            <p class="text-sm text-purple-600">الرصيد الحالي</p>
+                            <p class="text-2xl font-bold text-purple-800">${currentBalance.toLocaleString()} ر.س</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">المبلغ المضاف</label>
+                            <input type="number" id="addBudgetAmount" class="w-full px-4 py-2 border rounded-lg" placeholder="أدخل المبلغ" min="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">ملاحظات (اختياري)</label>
+                            <textarea id="addBudgetNotes" class="w-full px-4 py-2 border rounded-lg" rows="2" placeholder="سبب الإضافة..."></textarea>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t flex gap-2">
+                        <button onclick="document.getElementById('addBudgetTransactionModal').remove()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">إلغاء</button>
+                        <button onclick="executeAddBudgetTransaction()" class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">إضافة</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        async function executeAddBudgetTransaction() {
+            const amount = parseFloat(document.getElementById('addBudgetAmount').value) || 0;
+            const notes = document.getElementById('addBudgetNotes').value || '';
+
+            if (amount <= 0) {
+                alert('يرجى إدخال مبلغ صحيح');
+                return;
+            }
+
+            const oldBalance = Number(currentBudgetPeriod.opening_balance) || 0;
+            const newBalance = oldBalance + amount;
+
+            // Save transaction to history
+            saveBudgetTransaction({
+                type: 'add',
+                amount: amount,
+                oldBalance: oldBalance,
+                newBalance: newBalance,
+                notes: notes
+            });
+
+            // Update database
+            const { error } = await mySupabase
+                .from('budget_periods')
+                .update({ opening_balance: newBalance, updated_at: new Date().toISOString() })
+                .eq('id', currentBudgetPeriod.id);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            document.getElementById('addBudgetTransactionModal').remove();
+            alert(`تمت إضافة ${amount.toLocaleString()} ر.س للميزانية`);
+            await loadBudgetPeriod();
+        }
+
+        // Show budget history
+        function showBudgetHistory() {
+            if (!currentBudgetPeriod) return;
+
+            const periodLabel = `${arabicMonths[currentBudgetPeriod.period_month - 1]} ${currentBudgetPeriod.period_year}`;
+            const transactions = getBudgetTransactions();
+
+            const historyHtml = transactions.length > 0 ?
+                transactions.reverse().map(t => {
+                    const date = new Date(t.timestamp);
+                    const dateStr = formatDateArabic(date);
+                    const timeStr = date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                    const typeLabel = t.type === 'add' ? 'إضافة' : t.type === 'reset' ? 'إعادة تعيين' : 'تعديل';
+                    const typeColor = t.type === 'add' ? 'bg-green-100 text-green-700' : t.type === 'reset' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
+
+                    return `
+                        <div class="border-b p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs px-2 py-1 rounded ${typeColor}">${typeLabel}</span>
+                                <span class="text-xs text-gray-400">${t.id}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm">${t.oldBalance?.toLocaleString() || 0} ← ${t.newBalance?.toLocaleString() || 0} ر.س</p>
+                                    ${t.notes ? `<p class="text-xs text-gray-500">${t.notes}</p>` : ''}
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-xs text-gray-400">${dateStr}</p>
+                                    <p class="text-xs text-gray-400">${timeStr}</p>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('') :
+                '<p class="text-center text-gray-500 py-8">لا توجد تعديلات سابقة</p>';
+
+            const modal = document.createElement('div');
+            modal.id = 'budgetHistoryModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+                    <div class="p-4 border-b bg-purple-600 text-white rounded-t-xl flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold">سجل تعديلات الميزانية</h3>
+                            <p class="text-sm text-purple-200">${periodLabel}</p>
+                        </div>
+                        <button onclick="document.getElementById('budgetHistoryModal').remove()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+                    </div>
+                    <div class="overflow-y-auto max-h-[60vh]">
+                        ${historyHtml}
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        // Reset budget period
+        function resetBudgetPeriod() {
+            if (!hasPermission('manage_budget')) {
+                alert('ليس لديك صلاحية لإعادة تعيين الميزانية');
+                return;
+            }
+            if (!currentBudgetPeriod) return;
+
+            const periodLabel = `${arabicMonths[currentBudgetPeriod.period_month - 1]} ${currentBudgetPeriod.period_year}`;
+
+            if (!confirm(`هل أنت متأكد من إعادة تعيين ميزانية ${periodLabel}؟\n\nسيتم تصفير الرصيد الافتتاحي. لا يمكن التراجع عن هذا الإجراء.`)) {
+                return;
+            }
+
+            executeResetBudget();
+        }
+
+        async function executeResetBudget() {
+            const oldBalance = Number(currentBudgetPeriod.opening_balance) || 0;
+
+            // Save transaction to history
+            saveBudgetTransaction({
+                type: 'reset',
+                amount: 0,
+                oldBalance: oldBalance,
+                newBalance: 0,
+                notes: 'إعادة تعيين الميزانية'
+            });
+
+            // Update database
+            const { error } = await mySupabase
+                .from('budget_periods')
+                .update({ opening_balance: 0, updated_at: new Date().toISOString() })
+                .eq('id', currentBudgetPeriod.id);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            alert('تم إعادة تعيين الميزانية');
             await loadBudgetPeriod();
         }
 
@@ -3315,7 +5250,7 @@
 
             let csv = 'التاريخ,السائق,كود السائق,المشرف,دفعت الشركة,المبلغ,الوصف,نوع المصروف,الحالة,سبب الرفض\n';
             data.forEach(e => {
-                csv += `"${new Date(e.created_at).toLocaleDateString('ar-SA')}","${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.supervisor_name || ''}","${e.company_paid ? 'نعم' : 'لا'}","${e.amount}","${(e.description || '').replace(/"/g, '""')}","${e.expense_type || ''}","${statusLabels[e.status] || e.status}","${e.rejection_reason || ''}"\n`;
+                csv += `"${formatDateArabic(e.created_at)}","${e.driver?.full_name || ''}","${e.driver?.driver_code || ''}","${e.supervisor_name || ''}","${e.company_paid ? 'نعم' : 'لا'}","${e.amount}","${(e.description || '').replace(/"/g, '""')}","${e.expense_type || ''}","${statusLabels[e.status] || e.status}","${e.rejection_reason || ''}"\n`;
             });
 
             downloadCSV(csv, 'expenses_export.csv');
@@ -3325,6 +5260,353 @@
         document.getElementById('expenseDateRange').addEventListener('change', loadExpenses);
         document.getElementById('expenseStatus').addEventListener('change', loadExpenses);
         document.getElementById('expenseSupervisor').addEventListener('change', loadExpenses);
+
+        // ========================================
+        // RETURNS (الرجيع)
+        // ========================================
+        let returnsData = [];
+
+        // Reasons for return
+        const returnReasons = {
+            'customer_unavailable': 'العميل غير متواجد',
+            'wrong_address': 'عنوان خاطئ',
+            'customer_refused': 'رفض العميل الاستلام',
+            'damaged_goods': 'بضاعة تالفة',
+            'incomplete_order': 'طلب غير مكتمل',
+            'other': 'سبب آخر'
+        };
+
+        async function loadReturns() {
+            const status = document.getElementById('returnStatusFilter').value;
+            const driverId = document.getElementById('returnDriverFilter').value;
+            const dateFilter = document.getElementById('returnDateFilter').value;
+
+            let query = mySupabase
+                .from('returns')
+                .select('*, drivers(full_name, driver_code)')
+                .order('created_at', { ascending: false });
+
+            if (status !== 'all') query = query.eq('status', status);
+            if (driverId !== 'all') query = query.eq('driver_id', driverId);
+            if (dateFilter) {
+                query = query.gte('return_date', dateFilter)
+                             .lte('return_date', dateFilter + 'T23:59:59');
+            }
+
+            const { data: returns, error } = await query;
+
+            if (error) {
+                console.error('Error loading returns:', error);
+                document.getElementById('returnsList').innerHTML = '<p class="text-center text-red-500 py-8">خطأ في تحميل البيانات</p>';
+                return;
+            }
+
+            returnsData = returns || [];
+
+            // Update summary cards
+            const today = new Date().toISOString().split('T')[0];
+            const todayReturns = returnsData.filter(r => r.return_date?.startsWith(today));
+            document.getElementById('returnsPending').textContent = returnsData.filter(r => r.status === 'pending').length;
+            document.getElementById('returnsApproved').textContent = returnsData.filter(r => r.status === 'approved').length;
+            document.getElementById('returnsRejected').textContent = returnsData.filter(r => r.status === 'rejected').length;
+            document.getElementById('returnsTotal').textContent = todayReturns.length;
+
+            // Populate driver filter
+            const { data: drivers } = await mySupabase.from('drivers').select('id, full_name, driver_code').neq('role', 'admin').eq('is_active', true).order('full_name');
+            const driverSelect = document.getElementById('returnDriverFilter');
+            driverSelect.innerHTML = '<option value="all">كل السائقين</option>' +
+                (drivers || []).map(d => `<option value="${d.id}">${d.full_name} (${d.driver_code || '-'})</option>`).join('');
+
+            // Render returns list
+            if (returnsData.length === 0) {
+                document.getElementById('returnsList').innerHTML = '<p class="text-center text-gray-500 py-8">لا توجد سجلات رجيع</p>';
+                return;
+            }
+
+            const html = returnsData.map(ret => {
+                const statusColors = {
+                    pending: 'bg-yellow-100 text-yellow-700',
+                    approved: 'bg-green-100 text-green-700',
+                    rejected: 'bg-red-100 text-red-700'
+                };
+                const statusLabels = {
+                    pending: 'قيد المراجعة',
+                    approved: 'معتمد',
+                    rejected: 'مرفوض'
+                };
+                const reasonLabel = returnReasons[ret.reason] || ret.reason;
+                const returnDate = formatDateArabic(ret.return_date || ret.created_at);
+
+                return `
+                    <div class="bg-gray-50 p-4 rounded-lg border ${ret.status === 'pending' ? 'border-yellow-300' : 'border-gray-200'}">
+                        <div class="flex items-start justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 text-xl">📦</div>
+                                <div>
+                                    <p class="font-semibold">${ret.drivers?.full_name || 'غير محدد'}</p>
+                                    <p class="text-xs text-gray-500">${ret.drivers?.driver_code || '-'}</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[ret.status]}">${statusLabels[ret.status]}</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                                <p class="text-gray-500 text-xs">التاريخ</p>
+                                <p class="font-medium">${returnDate}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-xs">السبب</p>
+                                <p class="font-medium">${reasonLabel}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-xs">رقم الطلب</p>
+                                <p class="font-medium">${ret.order_number || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-xs">الصورة</p>
+                                ${ret.photo_url ? `<button onclick="showReturnPhoto('${ret.photo_url}')" class="text-blue-600 hover:underline text-sm">👁️ عرض</button>` : '<p class="text-gray-400">لا توجد</p>'}
+                            </div>
+                        </div>
+                        ${ret.notes ? `<p class="mt-2 text-sm text-gray-600 bg-white p-2 rounded"><span class="font-semibold">ملاحظات:</span> ${ret.notes}</p>` : ''}
+                        ${ret.status === 'pending' ? `
+                            <div class="mt-3 flex gap-2">
+                                <button onclick="approveReturn('${ret.id}')" class="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm">✓ اعتماد</button>
+                                <button onclick="rejectReturn('${ret.id}')" class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm">✕ رفض</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('returnsList').innerHTML = html;
+        }
+
+        function showAddReturnModal() {
+            const modal = document.createElement('div');
+            modal.id = 'addReturnModal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+
+            // Get drivers for dropdown
+            mySupabase.from('drivers').select('id, full_name, driver_code').neq('role', 'admin').eq('is_active', true).order('full_name')
+                .then(({ data: drivers }) => {
+                    const driverOptions = (drivers || []).map(d =>
+                        `<option value="${d.id}">${d.full_name} (${d.driver_code || '-'})</option>`
+                    ).join('');
+
+                    const reasonOptions = Object.entries(returnReasons).map(([key, label]) =>
+                        `<option value="${key}">${label}</option>`
+                    ).join('');
+
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                            <div class="p-4 border-b flex items-center justify-between bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-t-xl">
+                                <h3 class="text-lg font-bold">📦 تسجيل رجيع جديد</h3>
+                                <button onclick="document.getElementById('addReturnModal').remove()" class="text-white/80 hover:text-white text-2xl">&times;</button>
+                            </div>
+                            <form id="addReturnForm" class="p-4 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">السائق *</label>
+                                    <select name="driver_id" required class="w-full px-3 py-2 border rounded-lg">
+                                        <option value="">اختر السائق</option>
+                                        ${driverOptions}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">تاريخ الرجيع *</label>
+                                    <input type="date" name="return_date" required class="w-full px-3 py-2 border rounded-lg" value="${new Date().toISOString().split('T')[0]}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">رقم الطلب</label>
+                                    <input type="text" name="order_number" class="w-full px-3 py-2 border rounded-lg" placeholder="رقم الطلب (اختياري)">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">سبب الرجيع *</label>
+                                    <select name="reason" required class="w-full px-3 py-2 border rounded-lg">
+                                        <option value="">اختر السبب</option>
+                                        ${reasonOptions}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">صورة الإثبات *</label>
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                        <input type="file" name="photo" id="returnPhotoInput" accept="image/*" class="hidden" onchange="previewReturnPhoto(this)">
+                                        <div id="returnPhotoPreview" class="hidden mb-2">
+                                            <img id="returnPhotoImg" class="max-h-40 mx-auto rounded-lg">
+                                        </div>
+                                        <button type="button" onclick="document.getElementById('returnPhotoInput').click()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">
+                                            📷 التقاط / اختيار صورة
+                                        </button>
+                                        <p class="text-xs text-gray-500 mt-2">صورة توضح حالة التسليم أو سبب الرجيع</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1">ملاحظات إضافية</label>
+                                    <textarea name="notes" rows="2" class="w-full px-3 py-2 border rounded-lg" placeholder="أي تفاصيل إضافية..."></textarea>
+                                </div>
+                            </form>
+                            <div class="p-4 border-t flex gap-2">
+                                <button onclick="document.getElementById('addReturnModal').remove()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">إلغاء</button>
+                                <button onclick="saveReturn()" class="flex-1 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold">حفظ الرجيع</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+            document.body.appendChild(modal);
+        }
+
+        function previewReturnPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('returnPhotoImg').src = e.target.result;
+                    document.getElementById('returnPhotoPreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function saveReturn() {
+            const form = document.getElementById('addReturnForm');
+            const formData = new FormData(form);
+
+            if (!formData.get('driver_id') || !formData.get('reason') || !formData.get('return_date')) {
+                alert('يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
+
+            // Upload photo if provided
+            let photoUrl = null;
+            const photoFile = document.getElementById('returnPhotoInput').files[0];
+            if (photoFile) {
+                const fileName = `returns/${Date.now()}_${photoFile.name}`;
+                const { data: uploadData, error: uploadError } = await mySupabase.storage
+                    .from('uploads')
+                    .upload(fileName, photoFile);
+
+                if (uploadError) {
+                    console.error('Photo upload error:', uploadError);
+                    // Continue without photo
+                } else {
+                    const { data: urlData } = mySupabase.storage.from('uploads').getPublicUrl(fileName);
+                    photoUrl = urlData?.publicUrl;
+                }
+            }
+
+            const returnData = {
+                driver_id: formData.get('driver_id'),
+                return_date: formData.get('return_date'),
+                order_number: formData.get('order_number') || null,
+                reason: formData.get('reason'),
+                notes: formData.get('notes') || null,
+                photo_url: photoUrl,
+                status: 'pending'
+            };
+
+            const { error } = await mySupabase.from('returns').insert([returnData]);
+
+            if (error) {
+                console.error('Error saving return:', error);
+                alert('خطأ في حفظ الرجيع: ' + error.message);
+                return;
+            }
+
+            await logAction('create_return', 'return', null, returnData);
+            document.getElementById('addReturnModal').remove();
+            alert('تم تسجيل الرجيع بنجاح');
+            loadReturns();
+        }
+
+        async function approveReturn(returnId) {
+            if (!hasPermission('approve_expenses')) {
+                alert('ليس لديك صلاحية لاعتماد الرجيع');
+                return;
+            }
+
+            const { error } = await mySupabase.from('returns').update({ status: 'approved' }).eq('id', returnId);
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            await logAction('approve_return', 'return', returnId, {});
+            alert('تم اعتماد الرجيع');
+            loadReturns();
+        }
+
+        async function rejectReturn(returnId) {
+            if (!hasPermission('approve_expenses')) {
+                alert('ليس لديك صلاحية لرفض الرجيع');
+                return;
+            }
+
+            const reason = prompt('سبب الرفض (اختياري):');
+
+            const { error } = await mySupabase.from('returns').update({
+                status: 'rejected',
+                rejection_reason: reason
+            }).eq('id', returnId);
+
+            if (error) {
+                alert('خطأ: ' + error.message);
+                return;
+            }
+
+            await logAction('reject_return', 'return', returnId, { rejection_reason: reason });
+            alert('تم رفض الرجيع');
+            loadReturns();
+        }
+
+        function showReturnPhoto(url) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4';
+            modal.onclick = () => modal.remove();
+            modal.innerHTML = `
+                <div class="max-w-4xl max-h-[90vh]">
+                    <img src="${url}" class="max-w-full max-h-[85vh] rounded-lg" alt="صورة الرجيع">
+                    <p class="text-center text-white mt-2 text-sm">انقر في أي مكان للإغلاق</p>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function exportReturnsCSV() {
+            const { data } = await mySupabase
+                .from('returns')
+                .select(`
+                    *,
+                    drivers(full_name, driver_code)
+                `)
+                .order('return_date', { ascending: false });
+
+            if (!data || data.length === 0) {
+                alert('لا توجد بيانات للتصدير');
+                return;
+            }
+
+            const headers = ['التاريخ', 'السائق', 'كود السائق', 'رقم الطلب', 'السبب', 'الحالة', 'ملاحظات'];
+            const rows = data.map(r => [
+                r.return_date || '',
+                r.drivers?.full_name || '',
+                r.drivers?.driver_code || '',
+                r.order_number || '',
+                returnReasons[r.reason] || r.reason || '',
+                r.status === 'approved' ? 'معتمد' : r.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة',
+                r.notes || ''
+            ]);
+
+            const csvContent = '\uFEFF' + [headers, ...rows].map(row =>
+                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            ).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `returns_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
 
         // ========================================
         // SEARCH HANDLERS

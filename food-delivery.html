@@ -274,6 +274,19 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
         const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Helper function to format dates in Gregorian (2026) format
+        function formatDateArabic(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleDateString('ar-EG', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                calendar: 'gregory'
+            });
+        }
+
         let currentDriver = null;
         let allCaptains = [];
         let pendingTransfers = [];
@@ -291,13 +304,14 @@
         // INITIALIZATION
         // ========================================
         async function init() {
-            // Set today's date
+            // Set today's date (Gregorian format)
             const today = new Date();
-            document.getElementById('todayDate').textContent = today.toLocaleDateString('ar-SA', {
+            document.getElementById('todayDate').textContent = today.toLocaleDateString('ar-EG', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
+                calendar: 'gregory'
             });
 
             const { data: { session } } = await mySupabase.auth.getSession();
@@ -774,7 +788,7 @@
                     <div class="p-3 bg-green-50 rounded-lg mb-2">
                         <div class="flex justify-between items-center">
                             <div>
-                                <p class="font-semibold">${new Date(r.report_date).toLocaleDateString('ar-SA')}</p>
+                                <p class="font-semibold">${formatDateArabic(r.report_date)}</p>
                                 <p class="text-sm text-gray-500">إجمالي: ${r.total_meals} وجبة</p>
                             </div>
                             <span class="text-green-600">📋</span>
@@ -796,7 +810,7 @@
                             <div class="flex justify-between items-center">
                                 <div>
                                     <p class="font-semibold">إلى: ${t.to_driver?.full_name || 'غير معروف'}</p>
-                                    <p class="text-sm text-gray-500">${new Date(t.created_at).toLocaleDateString('ar-SA')} - ${total} وجبة</p>
+                                    <p class="text-sm text-gray-500">${formatDateArabic(t.created_at)} - ${total} وجبة</p>
                                 </div>
                                 <span class="px-2 py-1 ${statusClass} rounded text-xs font-semibold">${statusText}</span>
                             </div>

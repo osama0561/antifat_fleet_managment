@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert Fake Roster Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-4">Insert Fake Roster Data</h1>
+        <p class="text-gray-600 mb-6">This script will insert sample data for testing the roster management system.</p>
+
+        <div id="status" class="space-y-2 mb-6">
+            <p class="text-gray-500">Click the button below to start inserting data...</p>
+        </div>
+
+        <button onclick="insertAllData()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">
+            Insert Fake Data
+        </button>
+
+        <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p class="text-yellow-800 text-sm">
+                <strong>Note:</strong> This data is for testing purposes only.
+                Run the delete script or manually remove from Supabase before production.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fwatvgxueajvjcwdokwh.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3YXR2Z3h1ZWFqdmpjd2Rva3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2OTUyMTMsImV4cCI6MjA4MzI3MTIxM30.agTQDa2tEM7nvV6fzW_9K-RTK-o3vwxMatgUvuROXdA';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function log(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const colors = {
+                info: 'text-blue-600',
+                success: 'text-green-600',
+                error: 'text-red-600',
+                warning: 'text-yellow-600'
+            };
+            statusDiv.innerHTML += `<p class="${colors[type]}">${message}</p>`;
+        }
+
+        async function insertAllData() {
+            document.getElementById('status').innerHTML = '';
+            log('Starting data insertion...', 'info');
+
+            try {
+                // 1. Get existing drivers
+                log('Fetching existing drivers...', 'info');
+                const { data: drivers, error: driversError } = await supabase
+                    .from('drivers')
+                    .select('id, full_name')
+                    .neq('role', 'admin')
+                    .limit(10);
+
+                if (driversError) throw driversError;
+                if (!drivers || drivers.length === 0) {
+                    log('No drivers found. Please add drivers first.', 'error');
+                    return;
+                }
+                log(`Found ${drivers.length} drivers`, 'success');
+
+                // 2. Get existing vehicles
+                log('Fetching existing vehicles...', 'info');
+                const { data: vehicles, error: vehiclesError } = await supabase
+                    .from('vehicles')
+                    .select('id, van_code')
+                    .limit(10);
+
+                if (vehiclesError) throw vehiclesError;
+                log(`Found ${vehicles?.length || 0} vehicles`, 'success');
+
+                // 3. Insert shift templates (if not exist)
+                log('Checking shift templates...', 'info');
+                const { data: existingTemplates } = await supabase.from('shift_templates').select('id');
+
+                if (!existingTemplates || existingTemplates.length === 0) {
+                    log('Inserting shift templates...', 'info');
+                    const templates = [
+                        { name: 'صباحية', start_time: '06:00', end_time: '14:00', color: '#22C55E', is_active: true },
+                        { name: 'مسائية', start_time: '14:00', end_time: '22:00', color: '#3B82F6', is_active: true },
+                        { name: 'ليلية', start_time: '22:00', end_time: '06:00', color: '#8B5CF6', is_active: true }
+                    ];
+                    const { error: templateError } = await supabase.from('shift_templates').insert(templates);
+                    if (templateError) throw templateError;
+                    log('Shift templates inserted', 'success');
+                } else {
+                    log('Shift templates already exist', 'success');
+                }
+
+                // Get templates for reference
+                const { data: templates } = await supabase.from('shift_templates').select('id, name');
+
+                // 4. Insert scheduled shifts for the current week and next week
+                log('Inserting scheduled shifts...', 'info');
+                const today = new Date();
+                const shifts = [];
+
+                for (let dayOffset = -7; dayOffset <= 14; dayOffset++) {
+                    const shiftDate = new Date(today);
+                    shiftDate.setDate(today.getDate() + dayOffset);
+                    const dateStr = shiftDate.toISOString().split('T')[0];
+
+                    // Skip Fridays (day 5)
+                    if (shiftDate.getDay() === 5) continue;
+
+                    // Assign shifts to drivers
+                    for (let i = 0; i < Math.min(drivers.length, 5); i++) {
+                        const template = templates[i % templates.length];
+                        const status = dayOffset < 0 ? (Math.random() > 0.15 ? 'completed' : 'absent') : 'scheduled';
+
+                        shifts.push({
+                            driver_id: drivers[i].id,
+                            template_id: template.id,
+                            shift_date: dateStr,
+                            start_time: template.name === 'صباحية' ? '06:00' : template.name === 'مسائية' ? '14:00' : '22:00',
+                            end_time: template.name === 'صباحية' ? '14:00' : template.name === 'مسائية' ? '22:00' : '06:00',
+                            status: status,
+                            notes: null
+                        });
+                    }
+                }
+
+                // Delete existing scheduled shifts first
+                await supabase.from('scheduled_shifts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+                const { data: insertedShifts, error: shiftsError } = await supabase
+                    .from('scheduled_shifts')
+                    .insert(shifts)
+                    .select();
+                if (shiftsError) throw shiftsError;
+                log(`Inserted ${insertedShifts?.length || 0} scheduled shifts`, 'success');
+
+                // 5. Insert vehicle assignments for some shifts
+                if (vehicles && vehicles.length > 0 && insertedShifts && insertedShifts.length > 0) {
+                    log('Inserting vehicle assignments...', 'info');
+                    const assignments = [];
+
+                    for (let i = 0; i < Math.min(insertedShifts.length, 20); i++) {
+                        const shift = insertedShifts[i];
+                        const vehicle = vehicles[i % vehicles.length];
+                        assignments.push({
+                            shift_id: shift.id,
+                            vehicle_id: vehicle.id,
+                            driver_id: shift.driver_id,
+                            assignment_date: shift.shift_date
+                        });
+                    }
+
+                    // Delete existing assignments first
+                    await supabase.from('vehicle_assignments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+                    const { error: assignError } = await supabase.from('vehicle_assignments').insert(assignments);
+                    if (assignError) throw assignError;
+                    log(`Inserted ${assignments.length} vehicle assignments`, 'success');
+                }
+
+                // 6. Insert leave requests
+                log('Inserting leave requests...', 'info');
+                const leaveTypes = ['annual', 'sick', 'personal', 'emergency'];
+                const leaveStatuses = ['pending', 'approved', 'rejected'];
+                const leaveRequests = [];
+
+                for (let i = 0; i < Math.min(drivers.length, 5); i++) {
+                    const startDate = new Date(today);
+                    startDate.setDate(today.getDate() + Math.floor(Math.random() * 30));
+                    const endDate = new Date(startDate);
+                    endDate.setDate(startDate.getDate() + Math.floor(Math.random() * 5) + 1);
+
+                    leaveRequests.push({
+                        driver_id: drivers[i].id,
+                        leave_type: leaveTypes[Math.floor(Math.random() * leaveTypes.length)],
+                        start_date: startDate.toISOString().split('T')[0],
+                        end_date: endDate.toISOString().split('T')[0],
+                        reason: 'طلب إجازة للاختبار',
+                        status: leaveStatuses[Math.floor(Math.random() * leaveStatuses.length)]
+                    });
+                }
+
+                // Delete existing leave requests first
+                await supabase.from('leave_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+                const { error: leaveError } = await supabase.from('leave_requests').insert(leaveRequests);
+                if (leaveError) throw leaveError;
+                log(`Inserted ${leaveRequests.length} leave requests`, 'success');
+
+                // 7. Insert time records for past shifts
+                log('Inserting time records...', 'info');
+                const timeRecords = [];
+
+                for (let dayOffset = -7; dayOffset <= 0; dayOffset++) {
+                    const recordDate = new Date(today);
+                    recordDate.setDate(today.getDate() + dayOffset);
+
+                    if (recordDate.getDay() === 5) continue; // Skip Fridays
+
+                    for (let i = 0; i < Math.min(drivers.length, 4); i++) {
+                        const clockIn = new Date(recordDate);
+                        clockIn.setHours(6 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 30), 0);
+
+                        const clockOut = new Date(recordDate);
+                        clockOut.setHours(14 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60), 0);
+
+                        const totalHours = ((clockOut - clockIn) / (1000 * 60 * 60)).toFixed(2);
+                        const overtimeHours = Math.max(0, totalHours - 8).toFixed(2);
+
+                        timeRecords.push({
+                            driver_id: drivers[i].id,
+                            clock_in: clockIn.toISOString(),
+                            clock_out: clockOut.toISOString(),
+                            total_hours: parseFloat(totalHours),
+                            overtime_hours: parseFloat(overtimeHours)
+                        });
+                    }
+                }
+
+                // Delete existing time records first
+                await supabase.from('time_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+                const { error: timeError } = await supabase.from('time_records').insert(timeRecords);
+                if (timeError) throw timeError;
+                log(`Inserted ${timeRecords.length} time records`, 'success');
+
+                log('All fake data inserted successfully!', 'success');
+                log('You can now test the roster management features in admin.html', 'info');
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

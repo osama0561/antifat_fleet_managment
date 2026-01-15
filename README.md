@@ -107,6 +107,38 @@ TEKRAR_API_KEY=your_api_key (when available)
   - Google Sheets integration
   - Tekrar ready
 
+- **v1.1** - Roster Management System
+  - Shift planning & scheduling with weekly grid view
+  - Shift templates (morning, evening, night)
+  - Leave requests management
+  - Clock in/out & time tracking
+  - Vehicle assignment per shift
+  - Analytics dashboard with driver performance
+  - Expiry alerts for licenses & vehicle documents
+  - Notification system
+
+## ⚠️ FAKE TEST DATA
+
+**The database currently contains fake/sample data for testing purposes.**
+
+The following tables contain test data:
+- `scheduled_shifts` - Sample shift schedules for past 2 weeks and upcoming weeks
+- `vehicle_assignments` - Sample vehicle assignments for shifts
+- `leave_requests` - Sample leave requests with various statuses
+- `time_records` - Sample clock in/out records
+
+### To Insert Fake Data (for testing):
+1. Open `insert-fake-roster-data.html` in your browser
+2. Click "Insert Fake Data" button
+3. Data will be populated in Supabase
+
+### To Remove Fake Data (before production):
+1. Open `delete-fake-roster-data.html` in your browser
+2. Click "Delete All Roster Data" button
+3. All roster test data will be removed (shift templates preserved)
+
+**Note:** Remove all fake data before going to production!
+
 ---
 
 Built with ❤️ using vibe coding best practices
